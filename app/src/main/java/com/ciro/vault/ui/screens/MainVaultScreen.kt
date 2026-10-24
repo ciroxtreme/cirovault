@@ -61,6 +61,9 @@ fun MainVaultScreen(
     var editingVaultItem by remember { mutableStateOf<VaultItem?>(null) }
     var isCreatingVaultItem by remember { mutableStateOf(false) }
 
+    // Refresh Trigger
+    var refreshKey by remember { mutableIntStateOf(0) }
+
     // SAF Export Launcher
     val exportLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.CreateDocument("application/octet-stream")
@@ -99,9 +102,6 @@ fun MainVaultScreen(
             }
         }
     }
-
-    // Refresh Trigger
-    var refreshKey by remember { mutableIntStateOf(0) }
 
     Scaffold(
         topBar = {
