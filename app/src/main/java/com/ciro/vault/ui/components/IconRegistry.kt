@@ -2,11 +2,16 @@ package com.ciro.vault.ui.components
 
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
-import androidx.compose.material.icons.outlined.*
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.graphics.vector.rememberVectorPainter
+import androidx.compose.ui.res.painterResource
+import com.ciro.vault.R
 
 object IconRegistry {
-    val ICONS = mapOf(
+    // Map untuk icon bawaan material
+    val MATERIAL_ICONS = mapOf(
         "folder" to Icons.Default.Folder,
         "star" to Icons.Default.Star,
         "lock" to Icons.Default.Lock,
@@ -25,20 +30,31 @@ object IconRegistry {
         "chat" to Icons.Default.Chat,
         "game" to Icons.Default.SportsEsports,
         "api" to Icons.Default.DataObject,
-        "note" to Icons.Default.Description,
-        "github" to Icons.Default.DataObject,
-        "google" to Icons.Default.Mail,
-        "x" to Icons.Default.Tag,
-        "cloudflare" to Icons.Default.CloudQueue,
-        "telegram" to Icons.Default.Send,
-        "whatsapp" to Icons.Default.Call,
-        "discord" to Icons.Default.Forum,
-        "spotify" to Icons.Default.MusicNote,
-        "steam" to Icons.Default.Gamepad
+        "note" to Icons.Default.Description
     )
 
-    fun getIcon(key: String): ImageVector {
-        return ICONS[key.lowercase()] ?: Icons.Default.Lock
+    // Map untuk icon brand vektor resmi
+    val BRAND_DRAWABLES = mapOf(
+        "github" to R.drawable.ic_brand_github,
+        "google" to R.drawable.ic_brand_google,
+        "x" to R.drawable.ic_brand_x,
+        "cloudflare" to R.drawable.ic_brand_cloudflare,
+        "telegram" to R.drawable.ic_brand_telegram,
+        "whatsapp" to R.drawable.ic_brand_whatsapp,
+        "discord" to R.drawable.ic_brand_discord,
+        "spotify" to R.drawable.ic_brand_spotify,
+        "steam" to R.drawable.ic_brand_steam
+    )
+
+    @Composable
+    fun getPainter(key: String): Painter {
+        val k = key.lowercase()
+        val drawableRes = BRAND_DRAWABLES[k]
+        if (drawableRes != null) {
+            return painterResource(id = drawableRes)
+        }
+        val matVector = MATERIAL_ICONS[k] ?: Icons.Default.Lock
+        return rememberVectorPainter(image = matVector)
     }
 
     /**

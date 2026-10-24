@@ -199,7 +199,7 @@ fun MainVaultScreen(
                         onClick = { selectedFolderId = folder.id },
                         leadingIcon = {
                             Icon(
-                                imageVector = IconRegistry.getIcon(folder.iconKey),
+                                painter = IconRegistry.getPainter(folder.iconKey),
                                 contentDescription = null,
                                 modifier = Modifier.size(16.dp)
                             )
@@ -556,7 +556,7 @@ fun VaultCard(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Icon(
-                    imageVector = IconRegistry.getIcon(item.iconKey),
+                    painter = IconRegistry.getPainter(item.iconKey),
                     contentDescription = null,
                     tint = AccentCyan,
                     modifier = Modifier.size(24.dp)

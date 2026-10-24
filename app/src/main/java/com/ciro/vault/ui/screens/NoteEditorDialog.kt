@@ -61,8 +61,10 @@ fun NoteEditorDialog(
                                 updatedAt = System.currentTimeMillis()
                             )
                             onSave(saved)
-                        }
-                    ) { Text("Simpan") }
+                        },
+                        colors = ButtonDefaults.buttonColors(containerColor = AccentCyan, contentColor = androidx.compose.ui.graphics.Color.Black),
+                        shape = RoundedCornerShape(8.dp)
+                    ) { Text("Simpan", fontWeight = FontWeight.Bold) }
                 }
 
                 Spacer(modifier = Modifier.height(10.dp))

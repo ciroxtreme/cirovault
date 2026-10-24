@@ -105,8 +105,10 @@ fun VaultEditorDialog(
                                 updatedAt = System.currentTimeMillis()
                             )
                             onSave(saved)
-                        }
-                    ) { Text("Simpan") }
+                        },
+                        colors = ButtonDefaults.buttonColors(containerColor = AccentCyan, contentColor = androidx.compose.ui.graphics.Color.Black),
+                        shape = RoundedCornerShape(8.dp)
+                    ) { Text("Simpan", fontWeight = FontWeight.Bold) }
                 }
 
                 Spacer(modifier = Modifier.height(10.dp))
@@ -157,12 +159,16 @@ fun VaultEditorDialog(
                         modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
                         horizontalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
-                        listOf("github", "google", "x", "cloudflare", "telegram", "whatsapp", "discord", "bank", "shopping", "api", "terminal", "lock").forEach { key ->
+                        listOf("github", "google", "x", "cloudflare", "telegram", "whatsapp", "discord", "spotify", "steam", "bank", "shopping", "api", "terminal", "lock").forEach { key ->
                             FilterChip(
                                 selected = iconKey == key,
                                 onClick = { iconKey = key },
                                 leadingIcon = {
-                                    Icon(IconRegistry.getIcon(key), contentDescription = null, modifier = Modifier.size(16.dp))
+                                    Icon(
+                                        painter = IconRegistry.getPainter(key),
+                                        contentDescription = null,
+                                        modifier = Modifier.size(16.dp)
+                                    )
                                 },
                                 label = { Text(key.uppercase()) }
                             )
