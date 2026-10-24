@@ -28,6 +28,7 @@ object IconRegistry {
         "bank" to Icons.Default.AccountBalance,
         "shopping" to Icons.Default.ShoppingCart,
         "chat" to Icons.Default.Chat,
+        "social" to Icons.Default.Groups, // Icon sosial media universal (mewakili sosmed lain yg tidak tersedia)
         "game" to Icons.Default.SportsEsports,
         "api" to Icons.Default.DataObject,
         "note" to Icons.Default.Description
@@ -38,6 +39,8 @@ object IconRegistry {
         "github" to R.drawable.ic_brand_github,
         "google" to R.drawable.ic_brand_google,
         "x" to R.drawable.ic_brand_x,
+        "instagram" to R.drawable.ic_brand_instagram,
+        "facebook" to R.drawable.ic_brand_facebook,
         "cloudflare" to R.drawable.ic_brand_cloudflare,
         "telegram" to R.drawable.ic_brand_telegram,
         "whatsapp" to R.drawable.ic_brand_whatsapp,
@@ -66,12 +69,15 @@ object IconRegistry {
             t.contains("github") -> "github"
             t.contains("google") || t.contains("gmail") -> "google"
             t.contains("twitter") || t.contains("x.com") || t.startsWith("x ") || t == "x" -> "x"
+            t.contains("ig") || t.contains("instagram") -> "instagram"
+            t.contains("fb") || t.contains("facebook") -> "facebook"
             t.contains("cloudflare") -> "cloudflare"
             t.contains("telegram") -> "telegram"
             t.contains("wa") || t.contains("whatsapp") -> "whatsapp"
             t.contains("discord") -> "discord"
             t.contains("steam") -> "steam"
             t.contains("spotify") -> "spotify"
+            t.contains("sosmed") || t.contains("social") || t.contains("tiktok") || t.contains("threads") -> "social"
             t.contains("bank") || t.contains("bca") || t.contains("mandiri") || t.contains("bri") -> "bank"
             t.contains("shopee") || t.contains("tokopedia") || t.contains("tokped") -> "shopping"
             t.contains("api") || t.contains("token") || t.contains("secret") -> "api"

@@ -129,25 +129,40 @@ fun VaultEditorDialog(
                         }
                     }
 
-                    // PILIHAN IKON POPULER
+                    // PILIHAN IKON LAYANAN (GRID IKON RINGKAS TANPA TEKS BOROS)
                     Text("Pilih Ikon Layanan:", fontSize = 12.sp, color = TextPrimary)
+                    val availableIcons = listOf(
+                        "github", "google", "x", "instagram", "facebook", "social",
+                        "cloudflare", "telegram", "whatsapp", "discord", "spotify", "steam",
+                        "bank", "shopping", "api", "terminal", "web", "lock", "key"
+                    )
                     Row(
-                        modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
-                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .horizontalScroll(rememberScrollState())
+                            .padding(vertical = 4.dp),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        listOf("github", "google", "x", "cloudflare", "telegram", "whatsapp", "discord", "spotify", "steam", "bank", "shopping", "api", "terminal", "lock").forEach { key ->
-                            FilterChip(
-                                selected = iconKey == key,
-                                onClick = { iconKey = key },
-                                leadingIcon = {
+                        availableIcons.forEach { key ->
+                            val isSelected = iconKey == key
+                            Surface(
+                                shape = RoundedCornerShape(10.dp),
+                                color = if (isSelected) AccentCyan.copy(alpha = 0.25f) else BgDark,
+                                border = if (isSelected) androidx.compose.foundation.BorderStroke(1.5.dp, AccentCyan) else androidx.compose.foundation.BorderStroke(1.dp, SurfaceDark),
+                                modifier = Modifier
+                                    .size(42.dp)
+                                    .clickable { iconKey = key }
+                            ) {
+                                Box(contentAlignment = Alignment.Center) {
                                     Icon(
                                         painter = IconRegistry.getPainter(key),
-                                        contentDescription = null,
-                                        modifier = Modifier.size(16.dp)
+                                        contentDescription = key,
+                                        tint = if (isSelected) AccentCyan else TextPrimary.copy(alpha = 0.8f),
+                                        modifier = Modifier.size(22.dp)
                                     )
-                                },
-                                label = { Text(key.uppercase()) }
-                            )
+                                }
+                            }
                         }
                     }
 
@@ -178,24 +193,22 @@ fun VaultEditorDialog(
 
                     HorizontalDivider()
 
-                    // JALUR 2: NOMOR HP & PIN
+                    // JALUR 2: NOMOR HP & PIN (TATA LETAK PROPORSIAL TURUN KE BAWAH)
                     Text("📱 Jalur Nomor HP (GoPay, DANA, WA, OTP):", fontWeight = FontWeight.Bold, fontSize = 13.sp)
-                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        OutlinedTextField(
-                            value = phoneNumber,
-                            onValueChange = { phoneNumber = it },
-                            label = { Text("Nomor HP (+62...)") },
-                            singleLine = true,
-                            modifier = Modifier.weight(0.65f)
-                        )
-                        OutlinedTextField(
-                            value = pin,
-                            onValueChange = { pin = it },
-                            label = { Text("PIN (Opsional)") },
-                            singleLine = true,
-                            modifier = Modifier.weight(0.35f)
-                        )
-                    }
+                    OutlinedTextField(
+                        value = phoneNumber,
+                        onValueChange = { phoneNumber = it },
+                        label = { Text("Nomor HP (+62...)") },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    OutlinedTextField(
+                        value = pin,
+                        onValueChange = { pin = it },
+                        label = { Text("PIN Transaksi / Dompet (Opsional)") },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth()
+                    )
 
                     HorizontalDivider()
 
