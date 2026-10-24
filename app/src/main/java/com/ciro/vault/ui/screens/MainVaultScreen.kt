@@ -70,10 +70,32 @@ fun MainVaultScreen(
                 val bytes = repository.getEncryptedBackupBytes()
                 if (bytes != null) {
                     context.contentResolver.openOutputStream(uri)?.use { it.write(bytes) }
-                    Toast.makeText(context, "Berhasil backup ke file .cirovault!", Toast.LENGTH_LONG).show()
+                    Toast.makeText(context, "Berhasil ekspor ke file .cirovault!", Toast.LENGTH_LONG).show()
                 }
             } catch (e: Exception) {
-                Toast.makeText(context, "Gagal backup: ${e.message}", Toast.LENGTH_LONG).show()
+                Toast.makeText(context, "Gagal ekspor: ${e.message}", Toast.LENGTH_LONG).show()
+            }
+        }
+    }
+
+    // SAF Import Launcher
+    val importLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.OpenDocument()
+    ) { uri: Uri? ->
+        if (uri != null) {
+            try {
+                val bytes = context.contentResolver.openInputStream(uri)?.use { it.readBytes() }
+                if (bytes != null && repository.currentMasterPass != null) {
+                    val ok = repository.importEncryptedBytes(bytes, repository.currentMasterPass!!)
+                    if (ok) {
+                        refreshKey++
+                        Toast.makeText(context, "Berhasil memulihkan/impor data dari file .cirovault!", Toast.LENGTH_LONG).show()
+                    } else {
+                        Toast.makeText(context, "Gagal dekripsi: Password saat ini tidak cocok dengan berkas cadangan!", Toast.LENGTH_LONG).show()
+                    }
+                }
+            } catch (e: Exception) {
+                Toast.makeText(context, "Gagal impor berkas: ${e.message}", Toast.LENGTH_LONG).show()
             }
         }
     }
@@ -363,23 +385,45 @@ fun MainVaultScreen(
         )
     }
 
-    // DIALOG BACKUP PORTABEL (.cirovault)
+    // DIALOG BACKUP & RESTORE PORTABEL (.cirovault)
     if (showBackupDialog) {
         AlertDialog(
             onDismissRequest = { showBackupDialog = false },
-            title = { Text("Ekspor & Bagikan Cadangan") },
+            title = { Text("Cadangan Database (.cirovault)") },
             text = {
-                Text("Semua Catatan Bebas + Seluruh Folder Brankas akan dikemas ke dalam satu berkas terenkripsi AES-256 (.cirovault).")
-            },
-            confirmButton = {
-                Button(
-                    onClick = {
-                        showBackupDialog = false
-                        val fileName = "CiroVault_Backup_${SimpleDateFormat("yyyyMMdd_HHmm", Locale.US).format(Date())}.cirovault"
-                        exportLauncher.launch(fileName)
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Text("Kelola file database portabel terenkripsi AES-256 untuk seluruh Catatan & Brankas Sandi.")
+                    
+                    HorizontalDivider()
+
+                    Button(
+                        onClick = {
+                            showBackupDialog = false
+                            val fileName = "CiroVault_Backup_${SimpleDateFormat("yyyyMMdd_HHmm", Locale.US).format(Date())}.cirovault"
+                            exportLauncher.launch(fileName)
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = ButtonDefaults.buttonColors(containerColor = AccentCyan, contentColor = Color.Black)
+                    ) {
+                        Icon(Icons.Default.Upload, contentDescription = null, modifier = Modifier.size(18.dp))
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Ekspor / Backup File Baru", fontWeight = FontWeight.Bold)
                     }
-                ) { Text("Simpan ke File (.cirovault)") }
+
+                    OutlinedButton(
+                        onClick = {
+                            showBackupDialog = false
+                            importLauncher.launch(arrayOf("*/*"))
+                        },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Icon(Icons.Default.Download, contentDescription = null, modifier = Modifier.size(18.dp))
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Impor / Pulihkan dari File", fontWeight = FontWeight.Bold)
+                    }
+                }
             },
+            confirmButton = {},
             dismissButton = {
                 TextButton(onClick = { showBackupDialog = false }) { Text("Tutup") }
             }

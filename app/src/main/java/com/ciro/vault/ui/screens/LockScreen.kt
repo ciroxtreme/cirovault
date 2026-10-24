@@ -1,13 +1,15 @@
 package com.ciro.vault.ui.screens
 
+import android.net.Uri
 import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Fingerprint
+import androidx.compose.material.icons.filled.FileOpen
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
@@ -150,6 +152,45 @@ fun LockScreen(
                     shape = RoundedCornerShape(10.dp)
                 ) {
                     Text(if (isCreated) "Buka Brankas" else "Buat Brankas Baru")
+                }
+
+                val openFileLauncher = rememberLauncherForActivityResult(
+                    contract = ActivityResultContracts.OpenDocument()
+                ) { uri: Uri? ->
+                    if (uri != null) {
+                        try {
+                            val bytes = context.contentResolver.openInputStream(uri)?.use { it.readBytes() }
+                            if (bytes != null) {
+                                if (password.isBlank()) {
+                                    errorMessage = "Ketik Master Password berkas terlebih dahulu sebelum impor!"
+                                    return@rememberLauncherForActivityResult
+                                }
+                                val ok = repository.importEncryptedBytes(bytes, password.toCharArray())
+                                if (ok) {
+                                    Toast.makeText(context, "Berkas cadangan berhasil dibuka!", Toast.LENGTH_LONG).show()
+                                    onUnlocked()
+                                } else {
+                                    errorMessage = "Password salah atau berkas .cirovault rusak!"
+                                }
+                            }
+                        } catch (e: Exception) {
+                            errorMessage = "Gagal membaca berkas: ${e.message}"
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                OutlinedButton(
+                    onClick = {
+                        openFileLauncher.launch(arrayOf("*/*"))
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(10.dp)
+                ) {
+                    Icon(Icons.Default.FileOpen, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Buka / Impor File Cadangan (.cirovault)")
                 }
             }
         }
