@@ -6,7 +6,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Casino
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -21,6 +21,7 @@ import com.ciro.vault.ui.components.IconRegistry
 import com.ciro.vault.ui.theme.AccentCyan
 import com.ciro.vault.ui.theme.SurfaceDark
 import com.ciro.vault.ui.theme.TextPrimary
+import com.ciro.vault.ui.theme.TextSecondary
 import java.security.SecureRandom
 
 @OptIn(ExperimentalMaterial3Api::class)

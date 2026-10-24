@@ -18,6 +18,7 @@ import com.ciro.vault.model.NoteItem
 import com.ciro.vault.ui.theme.AccentCyan
 import com.ciro.vault.ui.theme.SurfaceDark
 import com.ciro.vault.ui.theme.TextPrimary
+import com.ciro.vault.ui.theme.TextSecondary
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
