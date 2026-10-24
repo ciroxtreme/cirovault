@@ -473,7 +473,7 @@ fun NoteCard(
                 )
                 IconButton(onClick = onTogglePin) {
                     Icon(
-                        imageVector = if (note.isPinned) Icons.Filled.Star else Icons.Outlined.StarBorder,
+                        imageVector = Icons.Default.Star,
                         contentDescription = "Pin",
                         tint = if (note.isPinned) AccentOrange else TextSecondary
                     )
@@ -589,7 +589,7 @@ fun VaultCard(
 
                 IconButton(onClick = onTogglePin) {
                     Icon(
-                        imageVector = if (item.isPinned) Icons.Filled.Star else Icons.Outlined.StarBorder,
+                        imageVector = Icons.Default.Star,
                         contentDescription = "Pin",
                         tint = if (item.isPinned) AccentOrange else TextSecondary
                     )
