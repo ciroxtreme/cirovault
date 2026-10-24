@@ -50,24 +50,13 @@ fun NoteEditorDialog(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    TextButton(onClick = onDismiss) { Text("Batal") }
-                    Text(text = "Tulis Catatan", fontWeight = FontWeight.Bold, color = TextPrimary, fontSize = 16.sp)
-                    Button(
-                        onClick = {
-                            val saved = initialNote.copy(
-                                title = title.trim(),
-                                content = content,
-                                folderId = selectedFolderId,
-                                updatedAt = System.currentTimeMillis()
-                            )
-                            onSave(saved)
-                        },
-                        colors = ButtonDefaults.buttonColors(containerColor = AccentCyan, contentColor = androidx.compose.ui.graphics.Color.Black),
-                        shape = RoundedCornerShape(8.dp)
-                    ) { Text("Simpan", fontWeight = FontWeight.Bold) }
+                    Text(text = "Tulis Catatan", fontWeight = FontWeight.Bold, color = TextPrimary, fontSize = 18.sp)
+                    IconButton(onClick = onDismiss) {
+                        Icon(Icons.Default.Close, contentDescription = "Tutup", tint = TextSecondary)
+                    }
                 }
 
-                Spacer(modifier = Modifier.height(10.dp))
+                Spacer(modifier = Modifier.height(8.dp))
 
                 // FOLDER SELECTOR CHIPS
                 if (folders.isNotEmpty()) {
@@ -135,6 +124,40 @@ fun NoteEditorDialog(
                     placeholder = { Text("Ketik catatan bebas tanpa batas di sini...") },
                     modifier = Modifier.fillMaxWidth().weight(1f)
                 )
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                // BOTTOM ACTION BAR (TOMBOL SIMPAN & BATAL DI BAWAH)
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    OutlinedButton(
+                        onClick = onDismiss,
+                        modifier = Modifier.weight(0.35f),
+                        shape = RoundedCornerShape(10.dp)
+                    ) {
+                        Text("Batal")
+                    }
+                    Button(
+                        onClick = {
+                            val saved = initialNote.copy(
+                                title = title.trim(),
+                                content = content,
+                                folderId = selectedFolderId,
+                                updatedAt = System.currentTimeMillis()
+                            )
+                            onSave(saved)
+                        },
+                        modifier = Modifier.weight(0.65f),
+                        colors = ButtonDefaults.buttonColors(containerColor = AccentCyan, contentColor = androidx.compose.ui.graphics.Color.Black),
+                        shape = RoundedCornerShape(10.dp)
+                    ) {
+                        Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(18.dp))
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text("Simpan Catatan", fontWeight = FontWeight.Bold)
+                    }
+                }
             }
         }
     }

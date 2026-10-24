@@ -80,41 +80,16 @@ fun VaultEditorDialog(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    TextButton(onClick = onDismiss) { Text("Batal") }
-                    Text(text = "Kelola Akun / Kredensial", fontWeight = FontWeight.Bold, color = TextPrimary, fontSize = 16.sp)
-                    Button(
-                        onClick = {
-                            val parsedCodes = rawBackupCodes.lines()
-                                .map { it.trim() }
-                                .filter { it.isNotBlank() }
-                                .map { BackupCodeItem(code = it) }
-
-                            val saved = initialItem.copy(
-                                title = title.trim(),
-                                folderId = selectedFolderId,
-                                iconKey = if (iconKey == "general") IconRegistry.suggestIconKey(title) else iconKey,
-                                username = username.trim(),
-                                password = password,
-                                phoneNumber = phoneNumber.trim(),
-                                pin = pin.trim(),
-                                linkedAccount = linkedAccount.trim(),
-                                apiKey = apiKey.trim(),
-                                backupCodes = if (parsedCodes.isNotEmpty()) parsedCodes else initialItem.backupCodes,
-                                loginUrl = loginUrl.trim(),
-                                notes = notes.trim(),
-                                updatedAt = System.currentTimeMillis()
-                            )
-                            onSave(saved)
-                        },
-                        colors = ButtonDefaults.buttonColors(containerColor = AccentCyan, contentColor = androidx.compose.ui.graphics.Color.Black),
-                        shape = RoundedCornerShape(8.dp)
-                    ) { Text("Simpan", fontWeight = FontWeight.Bold) }
+                    Text(text = "Kelola Akun / Kredensial", fontWeight = FontWeight.Bold, color = TextPrimary, fontSize = 18.sp)
+                    IconButton(onClick = onDismiss) {
+                        Icon(Icons.Default.Close, contentDescription = "Tutup", tint = TextSecondary)
+                    }
                 }
 
                 Spacer(modifier = Modifier.height(10.dp))
 
                 Column(
-                    modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()),
+                    modifier = Modifier.fillMaxWidth().weight(1f).verticalScroll(rememberScrollState()),
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     // JUDUL / NAMA LAYANAN
@@ -275,6 +250,54 @@ fun VaultEditorDialog(
                         label = { Text("Catatan Tambahan") },
                         modifier = Modifier.fillMaxWidth()
                     )
+                }
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                // BOTTOM ACTION BAR (TOMBOL SIMPAN & BATAL DI BAWAH)
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    OutlinedButton(
+                        onClick = onDismiss,
+                        modifier = Modifier.weight(0.35f),
+                        shape = RoundedCornerShape(10.dp)
+                    ) {
+                        Text("Batal")
+                    }
+                    Button(
+                        onClick = {
+                            val parsedCodes = rawBackupCodes.lines()
+                                .map { it.trim() }
+                                .filter { it.isNotBlank() }
+                                .map { BackupCodeItem(code = it) }
+
+                            val saved = initialItem.copy(
+                                title = title.trim(),
+                                folderId = selectedFolderId,
+                                iconKey = if (iconKey == "general") IconRegistry.suggestIconKey(title) else iconKey,
+                                username = username.trim(),
+                                password = password,
+                                phoneNumber = phoneNumber.trim(),
+                                pin = pin.trim(),
+                                linkedAccount = linkedAccount.trim(),
+                                apiKey = apiKey.trim(),
+                                backupCodes = if (parsedCodes.isNotEmpty()) parsedCodes else initialItem.backupCodes,
+                                loginUrl = loginUrl.trim(),
+                                notes = notes.trim(),
+                                updatedAt = System.currentTimeMillis()
+                            )
+                            onSave(saved)
+                        },
+                        modifier = Modifier.weight(0.65f),
+                        colors = ButtonDefaults.buttonColors(containerColor = AccentCyan, contentColor = androidx.compose.ui.graphics.Color.Black),
+                        shape = RoundedCornerShape(10.dp)
+                    ) {
+                        Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(18.dp))
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text("Simpan Akun", fontWeight = FontWeight.Bold)
+                    }
                 }
             }
         }
