@@ -6,9 +6,9 @@
 
     <application
         android:allowBackup="false"
-        android:icon="@android:drawable/ic_secure"
+        android:icon="@mipmap/ic_launcher"
         android:label="CiroVault"
-        android:roundIcon="@android:drawable/ic_secure"
+        android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@android:style/Theme.Material.NoActionBar">
 
