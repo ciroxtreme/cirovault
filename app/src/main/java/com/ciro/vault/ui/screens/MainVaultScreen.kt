@@ -50,9 +50,10 @@ fun MainVaultScreen(
     val context = LocalContext.current
     var selectedTab by remember { mutableIntStateOf(0) } // 0: Notes, 1: Vault
     var searchQuery by remember { mutableStateOf("") }
-    var selectedFolderId by remember { mutableStateOf<String?>(null) } // null = All
+    var selectedFolderId by remember { mutableStateOf<String?>(null) } // null = Root / Semua Folder
     var showNewFolderDialog by remember { mutableStateOf(false) }
     var showBackupDialog by remember { mutableStateOf(false) }
+    var folderToDelete by remember { mutableStateOf<FolderItem?>(null) }
 
     // Editor States
     var editingNote by remember { mutableStateOf<NoteItem?>(null) }
@@ -103,17 +104,35 @@ fun MainVaultScreen(
         }
     }
 
+    val currentFolder = remember(selectedFolderId, refreshKey) {
+        if (selectedFolderId != null) {
+            repository.cachedFolders.find { it.id == selectedFolderId }
+        } else null
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
+                navigationIcon = {
+                    if (selectedFolderId != null) {
+                        IconButton(onClick = { selectedFolderId = null }) {
+                            Icon(Icons.Default.ArrowBack, contentDescription = "Kembali", tint = TextPrimary)
+                        }
+                    }
+                },
                 title = {
                     Text(
-                        text = "CiroVault",
+                        text = if (selectedFolderId != null) (currentFolder?.name ?: "Folder") else "CiroVault",
                         fontWeight = FontWeight.Bold,
                         color = TextPrimary
                     )
                 },
                 actions = {
+                    if (selectedFolderId != null && currentFolder != null) {
+                        IconButton(onClick = { folderToDelete = currentFolder }) {
+                            Icon(Icons.Default.DeleteOutline, contentDescription = "Hapus Folder", tint = TextSecondary)
+                        }
+                    }
                     IconButton(onClick = { showBackupDialog = true }) {
                         Icon(Icons.Default.CloudDownload, contentDescription = "Backup", tint = AccentCyan)
                     }
@@ -195,48 +214,68 @@ fun MainVaultScreen(
                 )
             )
 
-            // FOLDER CHIP HORIZONTAL SCROLL (100% CLEAN SLATE)
+            // FOLDER BREADCRUMB & ITEM COUNT BAR (KeePassDX Style)
             val currentFolders = remember(selectedTab, refreshKey) {
                 val targetType = if (selectedTab == 0) "NOTE" else "VAULT"
                 repository.cachedFolders.filter { it.type == targetType }
             }
 
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .horizontalScroll(rememberScrollState())
-                    .padding(horizontal = 16.dp, vertical = 4.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                FilterChip(
-                    selected = selectedFolderId == null,
-                    onClick = { selectedFolderId = null },
-                    label = { Text("Semua (${if (selectedTab == 0) repository.cachedNotes.size else repository.cachedVaultItems.size})") }
-                )
-
-                currentFolders.forEach { folder ->
-                    FilterChip(
-                        selected = selectedFolderId == folder.id,
-                        onClick = { selectedFolderId = folder.id },
-                        leadingIcon = {
-                            Icon(
-                                painter = IconRegistry.getPainter(folder.iconKey),
-                                contentDescription = null,
-                                modifier = Modifier.size(16.dp)
-                            )
-                        },
-                        label = { Text(folder.name) }
-                    )
+            // Breadcrumb bar jika sedang di dalam folder
+            if (selectedFolderId != null && currentFolder != null) {
+                Surface(
+                    color = SurfaceDark,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 4.dp),
+                    shape = RoundedCornerShape(8.dp)
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { selectedFolderId = null }
+                            .padding(horizontal = 12.dp, vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            painter = IconRegistry.getPainter(currentFolder.iconKey),
+                            contentDescription = null,
+                            tint = AccentCyan,
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = if (selectedTab == 0) "Catatan" else "Brankas",
+                            fontSize = 13.sp,
+                            color = TextSecondary
+                        )
+                        Icon(
+                            imageVector = Icons.Default.ChevronRight,
+                            contentDescription = null,
+                            tint = TextSecondary,
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Text(
+                            text = currentFolder.name,
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = AccentCyan
+                        )
+                    }
                 }
             }
 
             // CONTENT LIST
             if (selectedTab == 0) {
                 // TAB CATATAN
+                val allNotes = repository.cachedNotes
                 val filteredNotes = remember(searchQuery, selectedFolderId, refreshKey) {
-                    repository.cachedNotes.filter { note ->
-                        val matchesFolder = selectedFolderId == null || note.folderId == selectedFolderId
+                    allNotes.filter { note ->
+                        val matchesFolder = if (selectedFolderId == null) {
+                            // Di root: tampilkan catatan yang tidak ada foldernya (atau semua jika searching)
+                            searchQuery.isNotBlank() || note.folderId.isBlank()
+                        } else {
+                            note.folderId == selectedFolderId
+                        }
                         val matchesSearch = searchQuery.isBlank() ||
                                 note.title.contains(searchQuery, ignoreCase = true) ||
                                 note.content.contains(searchQuery, ignoreCase = true)
@@ -244,9 +283,21 @@ fun MainVaultScreen(
                     }.sortedByDescending { it.isPinned }
                 }
 
-                if (filteredNotes.isEmpty()) {
+                val visibleFolders = remember(searchQuery, selectedFolderId, refreshKey) {
+                    if (selectedFolderId == null) {
+                        currentFolders.filter { folder ->
+                            searchQuery.isBlank() || folder.name.contains(searchQuery, ignoreCase = true)
+                        }
+                    } else emptyList()
+                }
+
+                if (filteredNotes.isEmpty() && visibleFolders.isEmpty()) {
                     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        Text("Belum ada catatan. Klik tombol + untuk menulis!", color = TextSecondary, fontSize = 14.sp)
+                        Text(
+                            text = if (selectedFolderId != null) "Folder ini masih kosong." else "Belum ada catatan. Klik tombol + untuk menulis!",
+                            color = TextSecondary,
+                            fontSize = 14.sp
+                        )
                     }
                 } else {
                     LazyColumn(
@@ -254,6 +305,18 @@ fun MainVaultScreen(
                         contentPadding = PaddingValues(16.dp),
                         verticalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
+                        // Render folder KeePassDX style jika di root
+                        items(visibleFolders, key = { "folder_${it.id}" }) { folder ->
+                            val itemCount = allNotes.count { it.folderId == folder.id }
+                            KeePassFolderRow(
+                                folder = folder,
+                                itemCount = itemCount,
+                                onClick = { selectedFolderId = folder.id },
+                                onDelete = { folderToDelete = folder }
+                            )
+                        }
+
+                        // Render note items
                         items(filteredNotes, key = { it.id }) { note ->
                             NoteCard(
                                 note = note,
@@ -277,9 +340,15 @@ fun MainVaultScreen(
                 }
             } else {
                 // TAB BRANKAS SANDI & API
+                val allVault = repository.cachedVaultItems
                 val filteredVault = remember(searchQuery, selectedFolderId, refreshKey) {
-                    repository.cachedVaultItems.filter { item ->
-                        val matchesFolder = selectedFolderId == null || item.folderId == selectedFolderId
+                    allVault.filter { item ->
+                        val matchesFolder = if (selectedFolderId == null) {
+                            // Di root: tampilkan akun yang tidak ada foldernya (atau semua jika searching)
+                            searchQuery.isNotBlank() || item.folderId.isBlank()
+                        } else {
+                            item.folderId == selectedFolderId
+                        }
                         val matchesSearch = searchQuery.isBlank() ||
                                 item.title.contains(searchQuery, ignoreCase = true) ||
                                 item.username.contains(searchQuery, ignoreCase = true) ||
@@ -290,9 +359,21 @@ fun MainVaultScreen(
                     }.sortedByDescending { it.isPinned }
                 }
 
-                if (filteredVault.isEmpty()) {
+                val visibleFolders = remember(searchQuery, selectedFolderId, refreshKey) {
+                    if (selectedFolderId == null) {
+                        currentFolders.filter { folder ->
+                            searchQuery.isBlank() || folder.name.contains(searchQuery, ignoreCase = true)
+                        }
+                    } else emptyList()
+                }
+
+                if (filteredVault.isEmpty() && visibleFolders.isEmpty()) {
                     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        Text("Brankas kosong. Tambah akun, 2FA, atau API key via +", color = TextSecondary, fontSize = 14.sp)
+                        Text(
+                            text = if (selectedFolderId != null) "Folder ini masih kosong." else "Brankas kosong. Tambah akun, 2FA, atau API key via +",
+                            color = TextSecondary,
+                            fontSize = 14.sp
+                        )
                     }
                 } else {
                     LazyColumn(
@@ -300,6 +381,18 @@ fun MainVaultScreen(
                         contentPadding = PaddingValues(16.dp),
                         verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
+                        // Render folder KeePassDX style jika di root
+                        items(visibleFolders, key = { "folder_${it.id}" }) { folder ->
+                            val itemCount = allVault.count { it.folderId == folder.id && !it.isDeleted }
+                            KeePassFolderRow(
+                                folder = folder,
+                                itemCount = itemCount,
+                                onClick = { selectedFolderId = folder.id },
+                                onDelete = { folderToDelete = folder }
+                            )
+                        }
+
+                        // Render vault card items
                         items(filteredVault, key = { it.id }) { item ->
                             VaultCard(
                                 item = item,
@@ -341,6 +434,52 @@ fun MainVaultScreen(
                 }
             }
         }
+    }
+
+    // DIALOG KONFIRMASI HAPUS FOLDER
+    if (folderToDelete != null) {
+        val target = folderToDelete!!
+        AlertDialog(
+            onDismissRequest = { folderToDelete = null },
+            title = { Text("Hapus Folder '${target.name}'?") },
+            text = { Text("Folder akan dihapus. Item di dalamnya tidak akan terhapus, melainkan dipindahkan ke Root.") },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        val folderId = target.id
+                        // Bersihkan folderId di item
+                        if (target.type == "NOTE") {
+                            repository.cachedNotes.forEachIndexed { idx, note ->
+                                if (note.folderId == folderId) {
+                                    repository.cachedNotes[idx] = note.copy(folderId = "")
+                                }
+                            }
+                        } else {
+                            repository.cachedVaultItems.forEachIndexed { idx, item ->
+                                if (item.folderId == folderId) {
+                                    repository.cachedVaultItems[idx] = item.copy(folderId = "")
+                                }
+                            }
+                        }
+                        repository.cachedFolders.removeAll { it.id == folderId }
+                        repository.save()
+                        if (selectedFolderId == folderId) {
+                            selectedFolderId = null
+                        }
+                        folderToDelete = null
+                        refreshKey++
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
+                ) {
+                    Text("Hapus Folder")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { folderToDelete = null }) {
+                    Text("Batal")
+                }
+            }
+        )
     }
 
     // DIALOG BUAT FOLDER BARU
@@ -478,6 +617,99 @@ fun MainVaultScreen(
                 editingVaultItem = null
             }
         )
+    }
+}
+
+// -------------------------------------------------------------
+// KEEPASSDX STYLE FOLDER ROW COMPONENT
+// -------------------------------------------------------------
+@Composable
+fun KeePassFolderRow(
+    folder: FolderItem,
+    itemCount: Int,
+    onClick: () -> Unit,
+    onDelete: () -> Unit
+) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onClick() },
+        colors = CardDefaults.cardColors(containerColor = SurfaceDark),
+        shape = RoundedCornerShape(12.dp)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 14.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            // Icon folder dengan Badge Oranye persis KeePassDX
+            Box(
+                contentAlignment = Alignment.TopStart,
+                modifier = Modifier.size(38.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Folder,
+                    contentDescription = null,
+                    tint = TextPrimary.copy(alpha = 0.85f),
+                    modifier = Modifier
+                        .size(32.dp)
+                        .align(Alignment.BottomEnd)
+                )
+                // Badge oranye lonjong/bulat dengan angka item
+                Surface(
+                    color = AccentOrange,
+                    shape = RoundedCornerShape(10.dp),
+                    modifier = Modifier.height(18.dp).defaultMinSize(minWidth = 18.dp)
+                ) {
+                    Box(
+                        contentAlignment = Alignment.Center,
+                        modifier = Modifier.padding(horizontal = 4.dp)
+                    ) {
+                        Text(
+                            text = itemCount.toString(),
+                            color = Color.White,
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.width(16.dp))
+
+            // Nama Folder
+            Text(
+                text = folder.name,
+                fontWeight = FontWeight.SemiBold,
+                fontSize = 16.sp,
+                color = TextPrimary,
+                modifier = Modifier.weight(1f),
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+
+            // Hapus folder
+            IconButton(
+                onClick = onDelete,
+                modifier = Modifier.size(32.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.DeleteOutline,
+                    contentDescription = "Hapus Folder",
+                    tint = TextSecondary,
+                    modifier = Modifier.size(18.dp)
+                )
+            }
+
+            // Panah masuk
+            Icon(
+                imageVector = Icons.Default.ChevronRight,
+                contentDescription = "Buka",
+                tint = TextSecondary,
+                modifier = Modifier.size(20.dp)
+            )
+        }
     }
 }
 
