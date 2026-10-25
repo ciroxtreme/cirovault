@@ -155,18 +155,20 @@ data class VaultItem(
     }
 }
 
-// MODEL FOLDER (KOSONG DI AWAL, DIBUAT USER)
+// MODEL FOLDER (MENDUKUNG SUB-FOLDER BERTINGKAT / TREE HIERARCHY)
 data class FolderItem(
     val id: String = UUID.randomUUID().toString(),
     val name: String,
     val iconKey: String = "folder",
-    val type: String // "NOTE" atau "VAULT"
+    val type: String, // "NOTE" atau "VAULT"
+    val parentId: String = "" // Kosong = Root, Jika terisi = Sub-folder dari folder induk
 ) {
     fun toJson(): JSONObject = JSONObject().apply {
         put("id", id)
         put("name", name)
         put("iconKey", iconKey)
         put("type", type)
+        put("parentId", parentId)
     }
 
     companion object {
@@ -174,7 +176,8 @@ data class FolderItem(
             id = json.optString("id", UUID.randomUUID().toString()),
             name = json.optString("name", ""),
             iconKey = json.optString("iconKey", "folder"),
-            type = json.optString("type", "VAULT")
+            type = json.optString("type", "VAULT"),
+            parentId = json.optString("parentId", "")
         )
     }
 }

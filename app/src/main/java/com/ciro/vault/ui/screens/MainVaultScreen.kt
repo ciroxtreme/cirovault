@@ -112,12 +112,28 @@ fun MainVaultScreen(
         } else null
     }
 
+    // Breadcrumb path hierarki folder: dari root sampai ke folder aktif
+    val folderBreadcrumbs = remember(selectedFolderId, refreshKey) {
+        val crumbs = mutableListOf<FolderItem>()
+        var curr = currentFolder
+        while (curr != null) {
+            crumbs.add(0, curr)
+            curr = if (curr.parentId.isNotEmpty()) {
+                repository.cachedFolders.find { it.id == curr?.parentId }
+            } else null
+        }
+        crumbs
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
                 navigationIcon = {
                     if (selectedFolderId != null) {
-                        IconButton(onClick = { selectedFolderId = null }) {
+                        IconButton(onClick = { 
+                            // Mundur satu tingkat ke parent folder atau ke root
+                            selectedFolderId = currentFolder?.parentId?.takeIf { it.isNotEmpty() }
+                        }) {
                             Icon(Icons.Default.ArrowBack, contentDescription = "Kembali", tint = TextPrimary)
                         }
                     }
@@ -244,13 +260,13 @@ fun MainVaultScreen(
                 }
             }
 
-            // FOLDER BREADCRUMB & ITEM COUNT BAR (KeePassDX Style)
+            // FOLDER BREADCRUMB (KeePassDX & Explorer Style)
             val currentFolders = remember(selectedTab, refreshKey) {
                 val targetType = if (selectedTab == 0) "NOTE" else "VAULT"
                 repository.cachedFolders.filter { it.type == targetType }
             }
 
-            // Breadcrumb bar jika sedang di dalam folder
+            // Breadcrumb bar jika sedang di dalam folder / sub-folder
             if (selectedFolderId != null && currentFolder != null) {
                 Surface(
                     color = SurfaceDark,
@@ -262,34 +278,34 @@ fun MainVaultScreen(
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .clickable { selectedFolderId = null }
+                            .horizontalScroll(rememberScrollState())
                             .padding(horizontal = 12.dp, vertical = 8.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Icon(
-                            painter = IconRegistry.getPainter(currentFolder.iconKey),
-                            contentDescription = null,
-                            tint = AccentCyan,
-                            modifier = Modifier.size(18.dp)
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
+                        // Tombol Root
                         Text(
                             text = if (selectedTab == 0) "Catatan" else "Brankas",
-                            fontSize = 13.sp,
-                            color = TextSecondary
+                            fontSize = 12.5.sp,
+                            color = TextSecondary,
+                            modifier = Modifier.clickable { selectedFolderId = null }
                         )
-                        Icon(
-                            imageVector = Icons.Default.ChevronRight,
-                            contentDescription = null,
-                            tint = TextSecondary,
-                            modifier = Modifier.size(16.dp)
-                        )
-                        Text(
-                            text = currentFolder.name,
-                            fontSize = 13.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = AccentCyan
-                        )
+                        // Daftar hierarki folder bertingkat
+                        folderBreadcrumbs.forEachIndexed { index, crumb ->
+                            Icon(
+                                imageVector = Icons.Default.ChevronRight,
+                                contentDescription = null,
+                                tint = TextSecondary,
+                                modifier = Modifier.size(15.dp).padding(horizontal = 2.dp)
+                            )
+                            val isLast = index == folderBreadcrumbs.size - 1
+                            Text(
+                                text = crumb.name,
+                                fontSize = 12.5.sp,
+                                fontWeight = if (isLast) FontWeight.Bold else FontWeight.Normal,
+                                color = if (isLast) AccentCyan else TextSecondary,
+                                modifier = Modifier.clickable { selectedFolderId = crumb.id }
+                            )
+                        }
                     }
                 }
             }
@@ -314,11 +330,16 @@ fun MainVaultScreen(
                 }
 
                 val visibleFolders = remember(searchQuery, selectedFolderId, refreshKey) {
-                    if (selectedFolderId == null) {
+                    if (searchQuery.isNotBlank()) {
+                        // Jika sedang mencari: tampilkan folder yang cocok
                         currentFolders.filter { folder ->
-                            searchQuery.isBlank() || folder.name.contains(searchQuery, ignoreCase = true)
+                            folder.name.contains(searchQuery, ignoreCase = true)
                         }
-                    } else emptyList()
+                    } else {
+                        // Tampilkan folder yang parentId-nya cocok dengan selectedFolderId (baik di root maupun di dalam folder)
+                        val targetParent = selectedFolderId ?: ""
+                        currentFolders.filter { folder -> folder.parentId == targetParent }
+                    }
                 }
 
                 if (filteredNotes.isEmpty() && visibleFolders.isEmpty()) {
@@ -391,11 +412,16 @@ fun MainVaultScreen(
                 }
 
                 val visibleFolders = remember(searchQuery, selectedFolderId, refreshKey) {
-                    if (selectedFolderId == null) {
+                    if (searchQuery.isNotBlank()) {
+                        // Jika sedang mencari: tampilkan folder yang cocok
                         currentFolders.filter { folder ->
-                            searchQuery.isBlank() || folder.name.contains(searchQuery, ignoreCase = true)
+                            folder.name.contains(searchQuery, ignoreCase = true)
                         }
-                    } else emptyList()
+                    } else {
+                        // Tampilkan folder yang parentId-nya cocok dengan selectedFolderId (baik di root maupun di dalam folder)
+                        val targetParent = selectedFolderId ?: ""
+                        currentFolders.filter { folder -> folder.parentId == targetParent }
+                    }
                 }
 
                 if (filteredVault.isEmpty() && visibleFolders.isEmpty()) {
@@ -519,29 +545,43 @@ fun MainVaultScreen(
         AlertDialog(
             onDismissRequest = { folderToDelete = null },
             title = { Text("Hapus Folder '${target.name}'?") },
-            text = { Text("Folder akan dihapus. Item di dalamnya tidak akan terhapus, melainkan dipindahkan ke Root.") },
+            text = { Text("Folder dan sub-foldernya akan dihapus. Item di dalamnya tidak akan terhapus, melainkan dipindahkan ke Root.") },
             confirmButton = {
                 Button(
                     onClick = {
                         val folderId = target.id
-                        // Bersihkan folderId di item
+                        // Temukan semua descendant folderId (sub-folder rekursif)
+                        val folderIdsToDelete = mutableSetOf(folderId)
+                        var addedMore = true
+                        while (addedMore) {
+                            val nextChildren = repository.cachedFolders
+                                .filter { it.parentId in folderIdsToDelete && it.id !in folderIdsToDelete }
+                                .map { it.id }
+                            if (nextChildren.isNotEmpty()) {
+                                folderIdsToDelete.addAll(nextChildren)
+                            } else {
+                                addedMore = false
+                            }
+                        }
+
+                        // Bersihkan folderId di item yang terdampak
                         if (target.type == "NOTE") {
                             repository.cachedNotes.forEachIndexed { idx, note ->
-                                if (note.folderId == folderId) {
+                                if (note.folderId in folderIdsToDelete) {
                                     repository.cachedNotes[idx] = note.copy(folderId = "")
                                 }
                             }
                         } else {
                             repository.cachedVaultItems.forEachIndexed { idx, item ->
-                                if (item.folderId == folderId) {
+                                if (item.folderId in folderIdsToDelete) {
                                     repository.cachedVaultItems[idx] = item.copy(folderId = "")
                                 }
                             }
                         }
-                        repository.cachedFolders.removeAll { it.id == folderId }
+                        repository.cachedFolders.removeAll { it.id in folderIdsToDelete }
                         repository.save()
-                        if (selectedFolderId == folderId) {
-                            selectedFolderId = null
+                        if (selectedFolderId in folderIdsToDelete) {
+                            selectedFolderId = target.parentId.takeIf { it.isNotEmpty() }
                         }
                         folderToDelete = null
                         refreshKey++
@@ -559,14 +599,19 @@ fun MainVaultScreen(
         )
     }
 
-    // DIALOG BUAT FOLDER BARU
+    // DIALOG BUAT FOLDER BARU (Mendukung Sub-folder di dalam folder aktif)
     if (showNewFolderDialog) {
         var folderName by remember { mutableStateOf("") }
         var selectedIconKey by remember { mutableStateOf("folder") }
+        val dialogTitle = if (selectedFolderId != null && currentFolder != null) {
+            "Buat Sub-folder di '${currentFolder.name}'"
+        } else {
+            "Buat Folder Baru (${if (selectedTab == 0) "Catatan" else "Brankas"})"
+        }
 
         AlertDialog(
             onDismissRequest = { showNewFolderDialog = false },
-            title = { Text("Buat Folder Baru (${if (selectedTab == 0) "Catatan" else "Brankas"})") },
+            title = { Text(dialogTitle) },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     OutlinedTextField(
@@ -585,7 +630,8 @@ fun MainVaultScreen(
                             val newFolder = FolderItem(
                                 name = folderName.trim(),
                                 iconKey = selectedIconKey,
-                                type = if (selectedTab == 0) "NOTE" else "VAULT"
+                                type = if (selectedTab == 0) "NOTE" else "VAULT",
+                                parentId = selectedFolderId ?: ""
                             )
                             repository.cachedFolders.add(newFolder)
                             repository.save()
