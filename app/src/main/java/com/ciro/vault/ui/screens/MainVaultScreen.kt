@@ -195,50 +195,62 @@ fun MainVaultScreen(
                 .fillMaxSize()
                 .padding(padding)
         ) {
-            // GLOBAL SEARCH BAR (Ramping & Proporsional)
-            OutlinedTextField(
-                value = searchQuery,
-                onValueChange = { searchQuery = it },
-                leadingIcon = { 
+            // GLOBAL SEARCH BAR (Ramping & Proporsional tanpa kepotong)
+            Surface(
+                color = SurfaceDark,
+                shape = RoundedCornerShape(10.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 6.dp)
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 12.dp, vertical = 9.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
                     Icon(
-                        Icons.Default.Search, 
-                        contentDescription = "Search", 
+                        imageVector = Icons.Default.Search,
+                        contentDescription = "Search",
                         tint = TextSecondary,
                         modifier = Modifier.size(18.dp)
-                    ) 
-                },
-                trailingIcon = {
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Box(modifier = Modifier.weight(1f), contentAlignment = Alignment.CenterStart) {
+                        if (searchQuery.isEmpty()) {
+                            Text(
+                                text = "Cari...",
+                                color = TextSecondary.copy(alpha = 0.5f),
+                                fontSize = 13.5.sp
+                            )
+                        }
+                        androidx.compose.foundation.text.BasicTextField(
+                            value = searchQuery,
+                            onValueChange = { searchQuery = it },
+                            singleLine = true,
+                            textStyle = androidx.compose.ui.text.TextStyle(
+                                color = TextPrimary,
+                                fontSize = 13.5.sp
+                            ),
+                            cursorBrush = androidx.compose.ui.graphics.SolidColor(AccentCyan),
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
                     if (searchQuery.isNotEmpty()) {
                         IconButton(
                             onClick = { searchQuery = "" },
-                            modifier = Modifier.size(28.dp)
+                            modifier = Modifier.size(24.dp)
                         ) {
                             Icon(
-                                Icons.Default.Clear, 
-                                contentDescription = "Clear", 
+                                Icons.Default.Clear,
+                                contentDescription = "Clear",
                                 tint = TextSecondary,
                                 modifier = Modifier.size(16.dp)
                             )
                         }
                     }
-                },
-                placeholder = {
-                    Text("Cari...", color = TextSecondary.copy(alpha = 0.5f), fontSize = 13.sp)
-                },
-                singleLine = true,
-                textStyle = LocalTextStyle.current.copy(fontSize = 13.sp),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 4.dp)
-                    .height(44.dp),
-                shape = RoundedCornerShape(10.dp),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedContainerColor = SurfaceDark,
-                    unfocusedContainerColor = SurfaceDark,
-                    focusedBorderColor = AccentCyan.copy(alpha = 0.5f),
-                    unfocusedBorderColor = Color.Transparent
-                )
-            )
+                }
+            }
 
             // FOLDER BREADCRUMB & ITEM COUNT BAR (KeePassDX Style)
             val currentFolders = remember(selectedTab, refreshKey) {
@@ -803,38 +815,13 @@ fun KeePassFolderRow(
                 .padding(horizontal = 12.dp, vertical = 7.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Icon folder dengan Badge Oranye mungil
-            Box(
-                contentAlignment = Alignment.TopStart,
-                modifier = Modifier.size(28.dp)
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Folder,
-                    contentDescription = null,
-                    tint = TextPrimary.copy(alpha = 0.85f),
-                    modifier = Modifier
-                        .size(22.dp)
-                        .align(Alignment.BottomEnd)
-                )
-                // Badge oranye lonjong/bulat dengan angka item
-                Surface(
-                    color = AccentOrange,
-                    shape = RoundedCornerShape(8.dp),
-                    modifier = Modifier.height(13.dp).defaultMinSize(minWidth = 13.dp)
-                ) {
-                    Box(
-                        contentAlignment = Alignment.Center,
-                        modifier = Modifier.padding(horizontal = 3.dp)
-                    ) {
-                        Text(
-                            text = itemCount.toString(),
-                            color = Color.White,
-                            fontSize = 8.sp,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
-                }
-            }
+            // Icon folder bersih
+            Icon(
+                imageVector = Icons.Default.Folder,
+                contentDescription = null,
+                tint = AccentCyan.copy(alpha = 0.85f),
+                modifier = Modifier.size(24.dp)
+            )
 
             Spacer(modifier = Modifier.width(10.dp))
 
@@ -848,6 +835,21 @@ fun KeePassFolderRow(
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
+
+            // Badge pill rapi di sebelah nama folder
+            Surface(
+                color = AccentOrange.copy(alpha = 0.2f),
+                shape = RoundedCornerShape(6.dp),
+                modifier = Modifier.padding(end = 4.dp)
+            ) {
+                Text(
+                    text = "$itemCount item",
+                    color = AccentOrange,
+                    fontSize = 10.5.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                )
+            }
 
             // Edit nama folder
             IconButton(
