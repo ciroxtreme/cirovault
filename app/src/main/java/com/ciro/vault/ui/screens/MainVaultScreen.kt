@@ -1081,16 +1081,25 @@ fun VaultCard(
                 if (item.linkedAccount.isNotBlank()) {
                     Spacer(modifier = Modifier.height(6.dp))
                     Surface(
-                        shape = RoundedCornerShape(6.dp),
-                        color = BgDark
+                        shape = RoundedCornerShape(8.dp),
+                        color = BgDark,
+                        modifier = Modifier.fillMaxWidth()
                     ) {
-                        Text(
-                            text = "🌐 Sign In with: ${item.linkedAccount}",
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Medium,
-                            color = AccentOrange,
-                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
-                        )
+                        Column(modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)) {
+                            Text(
+                                text = "🌐 Sign in with:",
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = AccentOrange
+                            )
+                            Spacer(modifier = Modifier.height(2.dp))
+                            Text(
+                                text = "- ${item.linkedAccount}",
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Medium,
+                                color = TextPrimary
+                            )
+                        }
                     }
                 }
 
