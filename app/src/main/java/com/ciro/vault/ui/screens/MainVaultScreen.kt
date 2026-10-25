@@ -798,7 +798,8 @@ fun NoteCard(
         colors = CardDefaults.cardColors(containerColor = SurfaceDark),
         shape = RoundedCornerShape(12.dp)
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
+        Column(modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp)) {
+            // HEADER BAR: BERSIH & MUNGIL (HANYA IKON & JUDUL SAAT HIDE)
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically
@@ -807,57 +808,77 @@ fun NoteCard(
                     imageVector = Icons.Default.Description,
                     contentDescription = null,
                     tint = AccentCyan,
-                    modifier = Modifier.size(22.dp)
+                    modifier = Modifier.size(18.dp)
                 )
                 Spacer(modifier = Modifier.width(10.dp))
                 Text(
                     text = if (note.title.isBlank()) "Tanpa Judul" else note.title,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Medium,
+                    fontSize = 14.sp,
                     color = TextPrimary,
                     modifier = Modifier.weight(1f),
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
-                IconButton(onClick = onTogglePin) {
+                if (note.isPinned) {
                     Icon(
                         imageVector = Icons.Default.Star,
-                        contentDescription = "Pin",
-                        tint = if (note.isPinned) AccentOrange else TextSecondary
+                        contentDescription = "Pinned",
+                        tint = AccentOrange,
+                        modifier = Modifier.size(14.dp)
                     )
-                }
-                IconButton(onClick = onClick) {
-                    Icon(Icons.Default.Edit, contentDescription = "Edit", tint = TextSecondary)
-                }
-                IconButton(onClick = { showDeleteConfirm = true }) {
-                    Icon(Icons.Default.Delete, contentDescription = "Delete", tint = TextSecondary)
+                    Spacer(modifier = Modifier.width(6.dp))
                 }
                 Icon(
                     imageVector = if (isExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
                     contentDescription = if (isExpanded) "Sembunyikan" else "Buka Detail",
                     tint = TextSecondary,
-                    modifier = Modifier.size(20.dp)
+                    modifier = Modifier.size(18.dp)
                 )
             }
 
             // KONTEN DETAIL HANYA MUNCUL KETIKA DITEKAN (SHOW MODE)
             if (isExpanded) {
-                Spacer(modifier = Modifier.height(10.dp))
-                HorizontalDivider(color = SurfaceDark)
+                Spacer(modifier = Modifier.height(8.dp))
+                HorizontalDivider(color = BgDark)
 
                 if (note.content.isNotBlank()) {
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
                         text = note.content,
-                        fontSize = 14.sp,
+                        fontSize = 13.sp,
                         color = TextPrimary,
-                        lineHeight = 20.sp
+                        lineHeight = 19.sp
                     )
                 }
 
                 Spacer(modifier = Modifier.height(10.dp))
-                val dateStr = SimpleDateFormat("dd MMM yyyy, HH:mm", Locale.getDefault()).format(Date(note.updatedAt))
-                Text(text = "Terakhir diubah: $dateStr", fontSize = 11.sp, color = TextSecondary.copy(alpha = 0.7f))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    val dateStr = SimpleDateFormat("dd MMM yyyy, HH:mm", Locale.getDefault()).format(Date(note.updatedAt))
+                    Text(text = dateStr, fontSize = 11.sp, color = TextSecondary.copy(alpha = 0.6f))
+
+                    // IKON AKSI DILETAKKAN DI BAWAH
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        IconButton(onClick = onTogglePin, modifier = Modifier.size(32.dp)) {
+                            Icon(
+                                imageVector = Icons.Default.Star,
+                                contentDescription = "Pin",
+                                tint = if (note.isPinned) AccentOrange else TextSecondary,
+                                modifier = Modifier.size(16.dp)
+                            )
+                        }
+                        IconButton(onClick = onClick, modifier = Modifier.size(32.dp)) {
+                            Icon(Icons.Default.Edit, contentDescription = "Edit", tint = TextSecondary, modifier = Modifier.size(16.dp))
+                        }
+                        IconButton(onClick = { showDeleteConfirm = true }, modifier = Modifier.size(32.dp)) {
+                            Icon(Icons.Default.Delete, contentDescription = "Delete", tint = TextSecondary, modifier = Modifier.size(16.dp))
+                        }
+                    }
+                }
             }
         }
     }
@@ -910,10 +931,10 @@ fun VaultCard(
             .fillMaxWidth()
             .clickable { isExpanded = !isExpanded },
         colors = CardDefaults.cardColors(containerColor = SurfaceDark),
-        shape = RoundedCornerShape(14.dp)
+        shape = RoundedCornerShape(12.dp)
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            // HEADER BAR: HANYA TAMPIL IKON, JUDUL, & AKSI POKOK KETIKA HIDE
+        Column(modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp)) {
+            // HEADER BAR: MUNGIL, BERSIH, & RAPI (HANYA IKON & JUDUL SAAT HIDE)
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically
@@ -922,54 +943,55 @@ fun VaultCard(
                     painter = IconRegistry.getPainter(item.iconKey),
                     contentDescription = null,
                     tint = AccentCyan,
-                    modifier = Modifier.size(24.dp)
+                    modifier = Modifier.size(20.dp)
                 )
                 Spacer(modifier = Modifier.width(10.dp))
                 Text(
                     text = item.title,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 17.sp,
+                    fontWeight = FontWeight.Medium,
+                    fontSize = 15.sp,
                     color = TextPrimary,
                     modifier = Modifier.weight(1f),
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
 
-                // SMART QUICK LAUNCH BUTTON (1-TAP OPEN URL)
-                if (item.loginUrl.isNotBlank()) {
-                    IconButton(onClick = {
-                        try {
-                            val url = if (!item.loginUrl.startsWith("http://") && !item.loginUrl.startsWith("https://")) {
-                                "https://${item.loginUrl}"
-                            } else item.loginUrl
-                            val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
-                            context.startActivity(intent)
-                        } catch (e: Exception) {
-                            Toast.makeText(context, "Gagal membuka link: ${e.message}", Toast.LENGTH_SHORT).show()
-                        }
-                    }) {
-                        Icon(Icons.Default.Launch, contentDescription = "Quick Launch", tint = AccentCyan)
-                    }
-                }
-
-                IconButton(onClick = onTogglePin) {
+                if (item.isPinned) {
                     Icon(
                         imageVector = Icons.Default.Star,
-                        contentDescription = "Pin",
-                        tint = if (item.isPinned) AccentOrange else TextSecondary
+                        contentDescription = "Pinned",
+                        tint = AccentOrange,
+                        modifier = Modifier.size(15.dp)
                     )
+                    Spacer(modifier = Modifier.width(6.dp))
                 }
-                IconButton(onClick = onClick) {
-                    Icon(Icons.Default.Edit, contentDescription = "Edit Akun", tint = TextSecondary)
+
+                // SMART QUICK LAUNCH BUTTON (1-TAP OPEN URL)
+                if (item.loginUrl.isNotBlank()) {
+                    IconButton(
+                        onClick = {
+                            try {
+                                val url = if (!item.loginUrl.startsWith("http://") && !item.loginUrl.startsWith("https://")) {
+                                    "https://${item.loginUrl}"
+                                } else item.loginUrl
+                                val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
+                                context.startActivity(intent)
+                            } catch (e: Exception) {
+                                Toast.makeText(context, "Gagal membuka link: ${e.message}", Toast.LENGTH_SHORT).show()
+                            }
+                        },
+                        modifier = Modifier.size(28.dp)
+                    ) {
+                        Icon(Icons.Default.Launch, contentDescription = "Quick Launch", tint = AccentCyan, modifier = Modifier.size(16.dp))
+                    }
+                    Spacer(modifier = Modifier.width(4.dp))
                 }
-                IconButton(onClick = { showDeleteConfirm = true }) {
-                    Icon(Icons.Default.Delete, contentDescription = "Delete", tint = TextSecondary)
-                }
+
                 Icon(
                     imageVector = if (isExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
                     contentDescription = if (isExpanded) "Sembunyikan" else "Buka Detail",
                     tint = TextSecondary,
-                    modifier = Modifier.size(20.dp)
+                    modifier = Modifier.size(18.dp)
                 )
             }
 
@@ -977,7 +999,7 @@ fun VaultCard(
             if (isExpanded) {
                 Spacer(modifier = Modifier.height(10.dp))
                 HorizontalDivider(color = BgDark)
-                Spacer(modifier = Modifier.height(6.dp))
+                Spacer(modifier = Modifier.height(8.dp))
 
                 // JALUR 1: USERNAME & PASSWORD
                 if (item.username.isNotBlank() || item.password.isNotBlank()) {
@@ -1109,6 +1131,32 @@ fun VaultCard(
                                 Icon(Icons.Default.ContentCopy, contentDescription = "Copy Code", tint = TextSecondary, modifier = Modifier.size(14.dp))
                             }
                         }
+                    }
+                }
+
+                // BOTTOM ACTION BAR: IKON BINTANG, PENSIL (EDIT), & TONG SAMPAH DITARUH DI BAWAH
+                Spacer(modifier = Modifier.height(10.dp))
+                HorizontalDivider(color = BgDark)
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 4.dp),
+                    horizontalArrangement = Arrangement.End,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    IconButton(onClick = onTogglePin, modifier = Modifier.size(34.dp)) {
+                        Icon(
+                            imageVector = Icons.Default.Star,
+                            contentDescription = "Pin",
+                            tint = if (item.isPinned) AccentOrange else TextSecondary,
+                            modifier = Modifier.size(17.dp)
+                        )
+                    }
+                    IconButton(onClick = onClick, modifier = Modifier.size(34.dp)) {
+                        Icon(Icons.Default.Edit, contentDescription = "Edit Akun", tint = TextSecondary, modifier = Modifier.size(17.dp))
+                    }
+                    IconButton(onClick = { showDeleteConfirm = true }, modifier = Modifier.size(34.dp)) {
+                        Icon(Icons.Default.Delete, contentDescription = "Delete", tint = TextSecondary, modifier = Modifier.size(17.dp))
                     }
                 }
             }
