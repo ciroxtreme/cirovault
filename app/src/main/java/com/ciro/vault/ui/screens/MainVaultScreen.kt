@@ -834,7 +834,7 @@ fun MainVaultScreen(
 }
 
 // -------------------------------------------------------------
-// MT MANAGER STYLE FOLDER ROW COMPONENT (RAMPING & INFORMATIF)
+// MT MANAGER STYLE FOLDER ROW COMPONENT (RAMPING, RAPAT & PROPORSIONAL)
 // -------------------------------------------------------------
 @Composable
 fun KeePassFolderRow(
@@ -850,25 +850,25 @@ fun KeePassFolderRow(
             .fillMaxWidth()
             .clickable { onClick() },
         colors = CardDefaults.cardColors(containerColor = SurfaceDark),
-        shape = RoundedCornerShape(10.dp)
+        shape = RoundedCornerShape(8.dp)
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 12.dp, vertical = 8.dp),
+                .padding(horizontal = 12.dp, vertical = 6.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Icon folder bersih
+            // Icon folder proporsional
             Icon(
                 imageVector = Icons.Default.Folder,
                 contentDescription = null,
                 tint = AccentCyan,
-                modifier = Modifier.size(24.dp)
+                modifier = Modifier.size(22.dp)
             )
 
-            Spacer(modifier = Modifier.width(12.dp))
+            Spacer(modifier = Modifier.width(10.dp))
 
-            // Nama Folder di atas, Info [ File: X | Folder: Y ] di bawah (Ala MT Manager)
+            // Nama Folder dan subtitle rapat tanpa jeda boros
             Column(
                 modifier = Modifier.weight(1f),
                 verticalArrangement = Arrangement.Center
@@ -876,36 +876,37 @@ fun KeePassFolderRow(
                 Text(
                     text = folder.name,
                     fontWeight = FontWeight.SemiBold,
-                    fontSize = 14.sp,
+                    fontSize = 13.5.sp,
+                    lineHeight = 16.sp,
                     color = TextPrimary,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
-                Spacer(modifier = Modifier.height(2.dp))
                 Text(
                     text = "[ File: $fileCount | Folder: $subFolderCount ]",
-                    fontSize = 11.5.sp,
-                    color = TextSecondary
+                    fontSize = 10.5.sp,
+                    lineHeight = 13.sp,
+                    color = TextSecondary.copy(alpha = 0.8f)
                 )
             }
 
             // Edit nama folder
             IconButton(
                 onClick = onEdit,
-                modifier = Modifier.size(26.dp)
+                modifier = Modifier.size(24.dp)
             ) {
                 Icon(
                     imageVector = Icons.Default.Edit,
                     contentDescription = "Edit Nama Folder",
                     tint = TextSecondary,
-                    modifier = Modifier.size(15.dp)
+                    modifier = Modifier.size(14.dp)
                 )
             }
 
             // Hapus folder
             IconButton(
                 onClick = onDelete,
-                modifier = Modifier.size(26.dp)
+                modifier = Modifier.size(24.dp)
             ) {
                 Icon(
                     imageVector = Icons.Default.DeleteOutline,
@@ -919,8 +920,8 @@ fun KeePassFolderRow(
             Icon(
                 imageVector = Icons.Default.ChevronRight,
                 contentDescription = "Buka",
-                tint = TextSecondary,
-                modifier = Modifier.size(16.dp)
+                tint = TextSecondary.copy(alpha = 0.7f),
+                modifier = Modifier.size(15.dp)
             )
         }
     }
