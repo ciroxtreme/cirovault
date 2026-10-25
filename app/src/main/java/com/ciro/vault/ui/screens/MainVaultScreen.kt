@@ -650,6 +650,7 @@ fun MainVaultScreen(
         VaultEditorDialog(
             initialItem = target,
             folders = repository.cachedFolders.filter { it.type == "VAULT" },
+            existingVaultItems = repository.cachedVaultItems.filter { !it.isDeleted },
             onDismiss = {
                 isCreatingVaultItem = false
                 editingVaultItem = null
@@ -778,7 +779,7 @@ fun KeePassFolderRow(
 }
 
 // -------------------------------------------------------------
-// NOTE CARD COMPONENT
+// NOTE CARD COMPONENT (WITH HIDE/SHOW EXPANDABLE TOGGLE)
 // -------------------------------------------------------------
 @Composable
 fun NoteCard(
@@ -787,28 +788,35 @@ fun NoteCard(
     onDelete: () -> Unit,
     onTogglePin: () -> Unit
 ) {
+    var isExpanded by remember { mutableStateOf(false) } // Default HIDE
     var showDeleteConfirm by remember { mutableStateOf(false) }
 
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable { onClick() },
+            .clickable { isExpanded = !isExpanded },
         colors = CardDefaults.cardColors(containerColor = SurfaceDark),
         shape = RoundedCornerShape(12.dp)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
+                Icon(
+                    imageVector = Icons.Default.Description,
+                    contentDescription = null,
+                    tint = AccentCyan,
+                    modifier = Modifier.size(22.dp)
+                )
+                Spacer(modifier = Modifier.width(10.dp))
                 Text(
                     text = if (note.title.isBlank()) "Tanpa Judul" else note.title,
                     fontWeight = FontWeight.Bold,
                     fontSize = 16.sp,
                     color = TextPrimary,
                     modifier = Modifier.weight(1f),
-                    maxLines = 2,
+                    maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
                 IconButton(onClick = onTogglePin) {
@@ -818,25 +826,39 @@ fun NoteCard(
                         tint = if (note.isPinned) AccentOrange else TextSecondary
                     )
                 }
+                IconButton(onClick = onClick) {
+                    Icon(Icons.Default.Edit, contentDescription = "Edit", tint = TextSecondary)
+                }
                 IconButton(onClick = { showDeleteConfirm = true }) {
                     Icon(Icons.Default.Delete, contentDescription = "Delete", tint = TextSecondary)
                 }
-            }
-
-            if (note.content.isNotBlank()) {
-                Spacer(modifier = Modifier.height(6.dp))
-                Text(
-                    text = note.content,
-                    fontSize = 13.sp,
-                    color = TextSecondary,
-                    maxLines = 4,
-                    overflow = TextOverflow.Ellipsis
+                Icon(
+                    imageVector = if (isExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                    contentDescription = if (isExpanded) "Sembunyikan" else "Buka Detail",
+                    tint = TextSecondary,
+                    modifier = Modifier.size(20.dp)
                 )
             }
 
-            Spacer(modifier = Modifier.height(8.dp))
-            val dateStr = SimpleDateFormat("dd MMM yyyy, HH:mm", Locale.getDefault()).format(Date(note.updatedAt))
-            Text(text = dateStr, fontSize = 11.sp, color = TextSecondary.copy(alpha = 0.6f))
+            // KONTEN DETAIL HANYA MUNCUL KETIKA DITEKAN (SHOW MODE)
+            if (isExpanded) {
+                Spacer(modifier = Modifier.height(10.dp))
+                HorizontalDivider(color = SurfaceDark)
+
+                if (note.content.isNotBlank()) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = note.content,
+                        fontSize = 14.sp,
+                        color = TextPrimary,
+                        lineHeight = 20.sp
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(10.dp))
+                val dateStr = SimpleDateFormat("dd MMM yyyy, HH:mm", Locale.getDefault()).format(Date(note.updatedAt))
+                Text(text = "Terakhir diubah: $dateStr", fontSize = 11.sp, color = TextSecondary.copy(alpha = 0.7f))
+            }
         }
     }
 
@@ -862,7 +884,7 @@ fun NoteCard(
 }
 
 // -------------------------------------------------------------
-// VAULT CARD COMPONENT (MULTI-JALUR + QUICK LAUNCH)
+// VAULT CARD COMPONENT (WITH DEFAULT HIDE MODE & EXPANDABLE DETAILS)
 // -------------------------------------------------------------
 @Composable
 fun VaultCard(
@@ -873,6 +895,7 @@ fun VaultCard(
     onTogglePin: () -> Unit,
     onBackupCodeToggled: (Int) -> Unit
 ) {
+    var isExpanded by remember { mutableStateOf(false) } // DEFAULT HIDE
     var showDeleteConfirm by remember { mutableStateOf(false) }
     var isPassRevealed by remember { mutableStateOf(false) }
 
@@ -885,12 +908,12 @@ fun VaultCard(
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable { onClick() },
+            .clickable { isExpanded = !isExpanded },
         colors = CardDefaults.cardColors(containerColor = SurfaceDark),
         shape = RoundedCornerShape(14.dp)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
-            // HEADER BAR
+            // HEADER BAR: HANYA TAMPIL IKON, JUDUL, & AKSI POKOK KETIKA HIDE
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically
@@ -907,7 +930,9 @@ fun VaultCard(
                     fontWeight = FontWeight.Bold,
                     fontSize = 17.sp,
                     color = TextPrimary,
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier.weight(1f),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
                 )
 
                 // SMART QUICK LAUNCH BUTTON (1-TAP OPEN URL)
@@ -934,140 +959,155 @@ fun VaultCard(
                         tint = if (item.isPinned) AccentOrange else TextSecondary
                     )
                 }
+                IconButton(onClick = onClick) {
+                    Icon(Icons.Default.Edit, contentDescription = "Edit Akun", tint = TextSecondary)
+                }
                 IconButton(onClick = { showDeleteConfirm = true }) {
                     Icon(Icons.Default.Delete, contentDescription = "Delete", tint = TextSecondary)
                 }
+                Icon(
+                    imageVector = if (isExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                    contentDescription = if (isExpanded) "Sembunyikan" else "Buka Detail",
+                    tint = TextSecondary,
+                    modifier = Modifier.size(20.dp)
+                )
             }
 
-            Spacer(modifier = Modifier.height(10.dp))
+            // KONTEN DETAIL HANYA MUNCUL JIKA DITEKAN (SHOW MODE)
+            if (isExpanded) {
+                Spacer(modifier = Modifier.height(10.dp))
+                HorizontalDivider(color = BgDark)
+                Spacer(modifier = Modifier.height(6.dp))
 
-            // JALUR 1: USERNAME & PASSWORD
-            if (item.username.isNotBlank() || item.password.isNotBlank()) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        if (item.username.isNotBlank()) {
-                            Text(text = "User: ${item.username}", fontSize = 13.sp, color = TextPrimary)
-                        }
-                        if (item.password.isNotBlank()) {
-                            Text(
-                                text = "Sandi: ${if (isPassRevealed) item.password else "••••••••"}",
-                                fontSize = 13.sp,
-                                color = TextSecondary
-                            )
-                        }
-                    }
-                    Row {
-                        if (item.password.isNotBlank()) {
-                            IconButton(onClick = { isPassRevealed = !isPassRevealed }) {
-                                Icon(
-                                    imageVector = if (isPassRevealed) Icons.Default.VisibilityOff else Icons.Default.Visibility,
-                                    contentDescription = "Toggle",
-                                    tint = TextSecondary,
-                                    modifier = Modifier.size(18.dp)
+                // JALUR 1: USERNAME & PASSWORD
+                if (item.username.isNotBlank() || item.password.isNotBlank()) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            if (item.username.isNotBlank()) {
+                                Text(text = "User: ${item.username}", fontSize = 13.sp, color = TextPrimary)
+                            }
+                            if (item.password.isNotBlank()) {
+                                Text(
+                                    text = "Sandi: ${if (isPassRevealed) item.password else "••••••••"}",
+                                    fontSize = 13.sp,
+                                    color = TextSecondary
                                 )
                             }
-                            IconButton(onClick = { copyToClipboard("Password", item.password) }) {
-                                Icon(Icons.Default.ContentCopy, contentDescription = "Copy Password", tint = AccentCyan, modifier = Modifier.size(18.dp))
+                        }
+                        Row {
+                            if (item.password.isNotBlank()) {
+                                IconButton(onClick = { isPassRevealed = !isPassRevealed }) {
+                                    Icon(
+                                        imageVector = if (isPassRevealed) Icons.Default.VisibilityOff else Icons.Default.Visibility,
+                                        contentDescription = "Toggle",
+                                        tint = TextSecondary,
+                                        modifier = Modifier.size(18.dp)
+                                    )
+                                }
+                                IconButton(onClick = { copyToClipboard("Password", item.password) }) {
+                                    Icon(Icons.Default.ContentCopy, contentDescription = "Copy Password", tint = AccentCyan, modifier = Modifier.size(18.dp))
+                                }
                             }
                         }
                     }
                 }
-            }
 
-            // JALUR 2: NOMOR TELEPON & PIN
-            if (item.phoneNumber.isNotBlank()) {
-                Spacer(modifier = Modifier.height(6.dp))
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Text(
-                        text = "📱 HP: ${item.phoneNumber} ${if (item.pin.isNotBlank()) "(PIN: ${item.pin})" else ""}",
-                        fontSize = 13.sp,
-                        color = TextPrimary
-                    )
-                    IconButton(onClick = { copyToClipboard("Nomor HP", item.phoneNumber) }) {
-                        Icon(Icons.Default.ContentCopy, contentDescription = "Copy Phone", tint = AccentGreen, modifier = Modifier.size(18.dp))
-                    }
-                }
-            }
-
-            // JALUR 3: TERTAUT SSO
-            if (item.linkedAccount.isNotBlank()) {
-                Spacer(modifier = Modifier.height(6.dp))
-                Surface(
-                    shape = RoundedCornerShape(6.dp),
-                    color = BgDark
-                ) {
-                    Text(
-                        text = "🌐 Numpang Login: ${item.linkedAccount}",
-                        fontSize = 12.sp,
-                        color = AccentOrange,
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
-                    )
-                }
-            }
-
-            // JALUR 4: API KEY / SECRET TOKEN
-            if (item.apiKey.isNotBlank()) {
-                Spacer(modifier = Modifier.height(8.dp))
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Text(
-                        text = "🔑 API: ${if (isPassRevealed) item.apiKey else item.apiKey.take(6) + "••••••••"}",
-                        fontSize = 12.sp,
-                        color = AccentCyan
-                    )
-                    IconButton(onClick = { copyToClipboard("API Key", item.apiKey) }) {
-                        Icon(Icons.Default.ContentCopy, contentDescription = "Copy API Key", tint = AccentCyan, modifier = Modifier.size(18.dp))
-                    }
-                }
-            }
-
-            // JALUR 5: 2FA BACKUP CODES LIST DENGAN CHECKLIST CORET
-            if (item.backupCodes.isNotEmpty()) {
-                Spacer(modifier = Modifier.height(10.dp))
-                Text(
-                    text = "🆘 Kode Cadangan Darurat 2FA (Klik untuk coret jika sudah dipakai):",
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = AccentOrange
-                )
-                Spacer(modifier = Modifier.height(4.dp))
-                item.backupCodes.forEachIndexed { idx, codeItem ->
+                // JALUR 2: NOMOR TELEPON & PIN
+                if (item.phoneNumber.isNotBlank()) {
+                    Spacer(modifier = Modifier.height(6.dp))
                     Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable { onBackupCodeToggled(idx) }
-                            .padding(vertical = 3.dp),
-                        verticalAlignment = Alignment.CenterVertically
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
                     ) {
-                        Checkbox(
-                            checked = codeItem.isUsed,
-                            onCheckedChange = { onBackupCodeToggled(idx) },
-                            modifier = Modifier.size(20.dp)
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
                         Text(
-                            text = codeItem.code,
+                            text = "📱 HP: ${item.phoneNumber} ${if (item.pin.isNotBlank()) "(PIN: ${item.pin})" else ""}",
                             fontSize = 13.sp,
-                            textDecoration = if (codeItem.isUsed) TextDecoration.LineThrough else null,
-                            color = if (codeItem.isUsed) TextSecondary.copy(alpha = 0.5f) else TextPrimary,
-                            modifier = Modifier.weight(1f)
+                            color = TextPrimary
                         )
-                        IconButton(
-                            onClick = { copyToClipboard("Kode Cadangan", codeItem.code) },
-                            modifier = Modifier.size(24.dp)
+                        IconButton(onClick = { copyToClipboard("Nomor HP", item.phoneNumber) }) {
+                            Icon(Icons.Default.ContentCopy, contentDescription = "Copy Phone", tint = AccentGreen, modifier = Modifier.size(18.dp))
+                        }
+                    }
+                }
+
+                // JALUR 3: SIGN IN WITH (SSO)
+                if (item.linkedAccount.isNotBlank()) {
+                    Spacer(modifier = Modifier.height(6.dp))
+                    Surface(
+                        shape = RoundedCornerShape(6.dp),
+                        color = BgDark
+                    ) {
+                        Text(
+                            text = "🌐 Sign In with: ${item.linkedAccount}",
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Medium,
+                            color = AccentOrange,
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                        )
+                    }
+                }
+
+                // JALUR 4: API KEY / SECRET TOKEN
+                if (item.apiKey.isNotBlank()) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text(
+                            text = "🔑 API: ${if (isPassRevealed) item.apiKey else item.apiKey.take(6) + "••••••••"}",
+                            fontSize = 12.sp,
+                            color = AccentCyan
+                        )
+                        IconButton(onClick = { copyToClipboard("API Key", item.apiKey) }) {
+                            Icon(Icons.Default.ContentCopy, contentDescription = "Copy API Key", tint = AccentCyan, modifier = Modifier.size(18.dp))
+                        }
+                    }
+                }
+
+                // JALUR 5: 2FA BACKUP CODES LIST DENGAN CHECKLIST CORET
+                if (item.backupCodes.isNotEmpty()) {
+                    Spacer(modifier = Modifier.height(10.dp))
+                    Text(
+                        text = "🆘 Kode Cadangan Darurat 2FA (Klik untuk coret jika sudah dipakai):",
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = AccentOrange
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    item.backupCodes.forEachIndexed { idx, codeItem ->
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { onBackupCodeToggled(idx) }
+                                .padding(vertical = 3.dp),
+                            verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Icon(Icons.Default.ContentCopy, contentDescription = "Copy Code", tint = TextSecondary, modifier = Modifier.size(14.dp))
+                            Checkbox(
+                                checked = codeItem.isUsed,
+                                onCheckedChange = { onBackupCodeToggled(idx) },
+                                modifier = Modifier.size(20.dp)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = codeItem.code,
+                                fontSize = 13.sp,
+                                textDecoration = if (codeItem.isUsed) TextDecoration.LineThrough else null,
+                                color = if (codeItem.isUsed) TextSecondary.copy(alpha = 0.5f) else TextPrimary,
+                                modifier = Modifier.weight(1f)
+                            )
+                            IconButton(
+                                onClick = { copyToClipboard("Kode Cadangan", codeItem.code) },
+                                modifier = Modifier.size(24.dp)
+                            ) {
+                                Icon(Icons.Default.ContentCopy, contentDescription = "Copy Code", tint = TextSecondary, modifier = Modifier.size(14.dp))
+                            }
                         }
                     }
                 }

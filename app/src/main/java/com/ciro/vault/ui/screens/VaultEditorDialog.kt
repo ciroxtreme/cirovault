@@ -31,6 +31,7 @@ import java.security.SecureRandom
 fun VaultEditorDialog(
     initialItem: VaultItem,
     folders: List<FolderItem>,
+    existingVaultItems: List<VaultItem> = emptyList(),
     onDismiss: () -> Unit,
     onSave: (VaultItem) -> Unit
 ) {
@@ -214,12 +215,48 @@ fun VaultEditorDialog(
 
                     HorizontalDivider()
 
-                    // JALUR 3: TERTAUT SSO
-                    Text("🌐 Numpang Login (Sign in with Google / X / GitHub):", fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                    // JALUR 3: TERTAUT SIGN IN WITH (SSO)
+                    Text("🌐 Sign In with (Google, X, IG, FB, dll):", fontWeight = FontWeight.Bold, fontSize = 13.sp)
+
+                    // Opsi Cepat: Pilih dari Akun Tersimpan di CiroVault
+                    val otherSavedAccounts = remember(existingVaultItems) {
+                        existingVaultItems.filter { it.id != initialItem.id && it.title.isNotBlank() }
+                    }
+                    if (otherSavedAccounts.isNotEmpty()) {
+                        Text("Hubungkan dengan akun tersimpan:", fontSize = 11.sp, color = TextSecondary)
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .horizontalScroll(rememberScrollState()),
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            otherSavedAccounts.forEach { acc ->
+                                val userLabel = if (acc.username.isNotBlank()) acc.username else if (acc.phoneNumber.isNotBlank()) acc.phoneNumber else ""
+                                val chipText = if (userLabel.isNotBlank()) "${acc.title} ($userLabel)" else acc.title
+                                val isSelected = linkedAccount.contains(acc.title, ignoreCase = true)
+                                FilterChip(
+                                    selected = isSelected,
+                                    onClick = {
+                                        linkedAccount = if (userLabel.isNotBlank()) "${acc.title}: $userLabel" else acc.title
+                                    },
+                                    leadingIcon = {
+                                        Icon(
+                                            painter = IconRegistry.getPainter(acc.iconKey),
+                                            contentDescription = null,
+                                            modifier = Modifier.size(16.dp)
+                                        )
+                                    },
+                                    label = { Text(chipText, fontSize = 12.sp) }
+                                )
+                            }
+                        }
+                    }
+
                     OutlinedTextField(
                         value = linkedAccount,
                         onValueChange = { linkedAccount = it },
-                        label = { Text("Akun Induk (misal: Google ciro@gmail.com)") },
+                        label = { Text("Penyedia & Akun Login (misal: IG: Dwinggunenseregipun)") },
+                        placeholder = { Text("IG: Dwinggunenseregipun atau Google: user@gmail.com") },
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth()
                     )
