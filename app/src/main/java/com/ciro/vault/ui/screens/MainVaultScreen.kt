@@ -130,14 +130,6 @@ fun MainVaultScreen(
                     )
                 },
                 actions = {
-                    if (selectedFolderId != null && currentFolder != null) {
-                        IconButton(onClick = { folderToEdit = currentFolder }) {
-                            Icon(Icons.Default.Edit, contentDescription = "Edit Folder", tint = AccentCyan)
-                        }
-                        IconButton(onClick = { folderToDelete = currentFolder }) {
-                            Icon(Icons.Default.DeleteOutline, contentDescription = "Hapus Folder", tint = TextSecondary)
-                        }
-                    }
                     IconButton(onClick = { showBackupDialog = true }) {
                         Icon(Icons.Default.CloudDownload, contentDescription = "Backup", tint = AccentCyan)
                     }
