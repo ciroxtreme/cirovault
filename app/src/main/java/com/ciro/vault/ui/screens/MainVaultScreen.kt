@@ -54,6 +54,7 @@ fun MainVaultScreen(
     var showNewFolderDialog by remember { mutableStateOf(false) }
     var showBackupDialog by remember { mutableStateOf(false) }
     var folderToDelete by remember { mutableStateOf<FolderItem?>(null) }
+    var folderToEdit by remember { mutableStateOf<FolderItem?>(null) }
 
     // Editor States
     var editingNote by remember { mutableStateOf<NoteItem?>(null) }
@@ -129,6 +130,9 @@ fun MainVaultScreen(
                 },
                 actions = {
                     if (selectedFolderId != null && currentFolder != null) {
+                        IconButton(onClick = { folderToEdit = currentFolder }) {
+                            Icon(Icons.Default.Edit, contentDescription = "Edit Folder", tint = AccentCyan)
+                        }
                         IconButton(onClick = { folderToDelete = currentFolder }) {
                             Icon(Icons.Default.DeleteOutline, contentDescription = "Hapus Folder", tint = TextSecondary)
                         }
@@ -312,6 +316,7 @@ fun MainVaultScreen(
                                 folder = folder,
                                 itemCount = itemCount,
                                 onClick = { selectedFolderId = folder.id },
+                                onEdit = { folderToEdit = folder },
                                 onDelete = { folderToDelete = folder }
                             )
                         }
@@ -388,6 +393,7 @@ fun MainVaultScreen(
                                 folder = folder,
                                 itemCount = itemCount,
                                 onClick = { selectedFolderId = folder.id },
+                                onEdit = { folderToEdit = folder },
                                 onDelete = { folderToDelete = folder }
                             )
                         }
@@ -434,6 +440,51 @@ fun MainVaultScreen(
                 }
             }
         }
+    }
+
+    // DIALOG EDIT NAMA FOLDER
+    if (folderToEdit != null) {
+        val target = folderToEdit!!
+        var editedName by remember { mutableStateOf(target.name) }
+
+        AlertDialog(
+            onDismissRequest = { folderToEdit = null },
+            title = { Text("Ubah Nama Folder") },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    OutlinedTextField(
+                        value = editedName,
+                        onValueChange = { editedName = it },
+                        label = { Text("Nama Folder") },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        if (editedName.isNotBlank()) {
+                            val idx = repository.cachedFolders.indexOfFirst { it.id == target.id }
+                            if (idx != -1) {
+                                repository.cachedFolders[idx] = target.copy(name = editedName.trim())
+                                repository.save()
+                                refreshKey++
+                            }
+                            folderToEdit = null
+                        }
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = AccentCyan, contentColor = Color.Black)
+                ) {
+                    Text("Simpan Perubahan")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { folderToEdit = null }) {
+                    Text("Batal")
+                }
+            }
+        )
     }
 
     // DIALOG KONFIRMASI HAPUS FOLDER
@@ -628,6 +679,7 @@ fun KeePassFolderRow(
     folder: FolderItem,
     itemCount: Int,
     onClick: () -> Unit,
+    onEdit: () -> Unit,
     onDelete: () -> Unit
 ) {
     Card(
@@ -688,6 +740,19 @@ fun KeePassFolderRow(
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
+
+            // Edit nama folder
+            IconButton(
+                onClick = onEdit,
+                modifier = Modifier.size(32.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Edit,
+                    contentDescription = "Edit Nama Folder",
+                    tint = TextSecondary,
+                    modifier = Modifier.size(17.dp)
+                )
+            }
 
             // Hapus folder
             IconButton(
