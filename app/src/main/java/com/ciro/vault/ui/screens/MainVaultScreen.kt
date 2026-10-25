@@ -358,10 +358,12 @@ fun MainVaultScreen(
                     ) {
                         // Render folder KeePassDX style jika di root
                         items(visibleFolders, key = { "folder_${it.id}" }) { folder ->
-                            val itemCount = allNotes.count { it.folderId == folder.id }
+                            val fileCount = allNotes.count { it.folderId == folder.id }
+                            val subFolderCount = currentFolders.count { it.parentId == folder.id }
                             KeePassFolderRow(
                                 folder = folder,
-                                itemCount = itemCount,
+                                fileCount = fileCount,
+                                subFolderCount = subFolderCount,
                                 onClick = { selectedFolderId = folder.id },
                                 onEdit = { folderToEdit = folder },
                                 onDelete = { folderToDelete = folder }
@@ -440,10 +442,12 @@ fun MainVaultScreen(
                     ) {
                         // Render folder KeePassDX style jika di root
                         items(visibleFolders, key = { "folder_${it.id}" }) { folder ->
-                            val itemCount = allVault.count { it.folderId == folder.id && !it.isDeleted }
+                            val fileCount = allVault.count { it.folderId == folder.id && !it.isDeleted }
+                            val subFolderCount = currentFolders.count { it.parentId == folder.id }
                             KeePassFolderRow(
                                 folder = folder,
-                                itemCount = itemCount,
+                                fileCount = fileCount,
+                                subFolderCount = subFolderCount,
                                 onClick = { selectedFolderId = folder.id },
                                 onEdit = { folderToEdit = folder },
                                 onDelete = { folderToDelete = folder }
@@ -830,12 +834,13 @@ fun MainVaultScreen(
 }
 
 // -------------------------------------------------------------
-// KEEPASSDX STYLE FOLDER ROW COMPONENT (RAMPING & PROPORSIONAL)
+// MT MANAGER STYLE FOLDER ROW COMPONENT (RAMPING & INFORMATIF)
 // -------------------------------------------------------------
 @Composable
 fun KeePassFolderRow(
     folder: FolderItem,
-    itemCount: Int,
+    fileCount: Int,
+    subFolderCount: Int,
     onClick: () -> Unit,
     onEdit: () -> Unit,
     onDelete: () -> Unit
@@ -850,42 +855,37 @@ fun KeePassFolderRow(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 12.dp, vertical = 7.dp),
+                .padding(horizontal = 12.dp, vertical = 8.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             // Icon folder bersih
             Icon(
                 imageVector = Icons.Default.Folder,
                 contentDescription = null,
-                tint = AccentCyan.copy(alpha = 0.85f),
+                tint = AccentCyan,
                 modifier = Modifier.size(24.dp)
             )
 
-            Spacer(modifier = Modifier.width(10.dp))
+            Spacer(modifier = Modifier.width(12.dp))
 
-            // Nama Folder
-            Text(
-                text = folder.name,
-                fontWeight = FontWeight.Medium,
-                fontSize = 13.5.sp,
-                color = TextPrimary,
+            // Nama Folder di atas, Info [ File: X | Folder: Y ] di bawah (Ala MT Manager)
+            Column(
                 modifier = Modifier.weight(1f),
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
-
-            // Badge pill rapi di sebelah nama folder
-            Surface(
-                color = AccentOrange.copy(alpha = 0.2f),
-                shape = RoundedCornerShape(6.dp),
-                modifier = Modifier.padding(end = 4.dp)
+                verticalArrangement = Arrangement.Center
             ) {
                 Text(
-                    text = "$itemCount item",
-                    color = AccentOrange,
-                    fontSize = 10.5.sp,
+                    text = folder.name,
                     fontWeight = FontWeight.SemiBold,
-                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                    fontSize = 14.sp,
+                    color = TextPrimary,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+                Spacer(modifier = Modifier.height(2.dp))
+                Text(
+                    text = "[ File: $fileCount | Folder: $subFolderCount ]",
+                    fontSize = 11.5.sp,
+                    color = TextSecondary
                 )
             }
 
