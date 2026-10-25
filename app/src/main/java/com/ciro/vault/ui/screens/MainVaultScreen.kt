@@ -1039,20 +1039,40 @@ fun VaultCard(
                 }
 
                 // JALUR 2: NOMOR TELEPON & PIN
-                if (item.phoneNumber.isNotBlank()) {
+                if (item.phoneNumber.isNotBlank() || item.pin.isNotBlank()) {
                     Spacer(modifier = Modifier.height(6.dp))
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
-                        Text(
-                            text = "📱 HP: ${item.phoneNumber} ${if (item.pin.isNotBlank()) "(PIN: ${item.pin})" else ""}",
-                            fontSize = 13.sp,
-                            color = TextPrimary
-                        )
-                        IconButton(onClick = { copyToClipboard("Nomor HP", item.phoneNumber) }) {
-                            Icon(Icons.Default.ContentCopy, contentDescription = "Copy Phone", tint = AccentGreen, modifier = Modifier.size(18.dp))
+                        Column(modifier = Modifier.weight(1f)) {
+                            if (item.phoneNumber.isNotBlank()) {
+                                Text(
+                                    text = "📱 HP: ${item.phoneNumber}",
+                                    fontSize = 13.sp,
+                                    color = TextPrimary
+                                )
+                            }
+                            if (item.pin.isNotBlank()) {
+                                Text(
+                                    text = "🔢 PIN: ${if (isPassRevealed) item.pin else "••••••"}",
+                                    fontSize = 13.sp,
+                                    color = AccentGreen
+                                )
+                            }
+                        }
+                        Row {
+                            if (item.phoneNumber.isNotBlank()) {
+                                IconButton(onClick = { copyToClipboard("Nomor HP", item.phoneNumber) }) {
+                                    Icon(Icons.Default.ContentCopy, contentDescription = "Copy Phone", tint = AccentGreen, modifier = Modifier.size(18.dp))
+                                }
+                            }
+                            if (item.pin.isNotBlank()) {
+                                IconButton(onClick = { copyToClipboard("PIN", item.pin) }) {
+                                    Icon(Icons.Default.Pin, contentDescription = "Copy PIN", tint = AccentGreen, modifier = Modifier.size(18.dp))
+                                }
+                            }
                         }
                     }
                 }

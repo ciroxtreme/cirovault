@@ -196,19 +196,19 @@ fun VaultEditorDialog(
 
                     HorizontalDivider()
 
-                    // JALUR 2: NOMOR HP & PIN (TATA LETAK PROPORSIAL TURUN KE BAWAH)
-                    Text("📱 Jalur Nomor HP (GoPay, DANA, WA, OTP):", fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                    // JALUR 2: NOMOR HP & PIN (BANK, DOMPET DIGITAL, ATM)
+                    Text("📱 Jalur Nomor HP & PIN (Bank, GoPay, DANA, ATM, OTP):", fontWeight = FontWeight.Bold, fontSize = 13.sp)
                     OutlinedTextField(
                         value = phoneNumber,
                         onValueChange = { phoneNumber = it },
-                        label = { Text("Nomor HP (+62...)") },
+                        label = { Text("Nomor HP (Opsional)") },
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth()
                     )
                     OutlinedTextField(
                         value = pin,
                         onValueChange = { pin = it },
-                        label = { Text("PIN Transaksi / Dompet (Opsional)") },
+                        label = { Text("PIN / Sandi Angka (Bank, Dompet, Kartu)") },
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth()
                     )
