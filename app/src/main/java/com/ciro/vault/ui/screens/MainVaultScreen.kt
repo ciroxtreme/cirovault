@@ -25,6 +25,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -83,24 +85,23 @@ fun MainVaultScreen(
         }
     }
 
-    // SAF Import Launcher
+    // SAF Import Launcher & Password State
+    var pendingImportBytes by remember { mutableStateOf<ByteArray?>(null) }
+    var showImportPasswordDialog by remember { mutableStateOf(false) }
+
     val importLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.OpenDocument()
     ) { uri: Uri? ->
         if (uri != null) {
             try {
                 val bytes = context.contentResolver.openInputStream(uri)?.use { it.readBytes() }
-                if (bytes != null && repository.currentMasterPass != null) {
-                    val ok = repository.importEncryptedBytes(bytes, repository.currentMasterPass!!)
-                    if (ok) {
-                        refreshKey++
-                        Toast.makeText(context, "Berhasil memulihkan/impor data dari file .cirovault!", Toast.LENGTH_LONG).show()
-                    } else {
-                        Toast.makeText(context, "Gagal dekripsi: Password saat ini tidak cocok dengan berkas cadangan!", Toast.LENGTH_LONG).show()
-                    }
+                if (bytes != null && bytes.isNotEmpty()) {
+                    pendingImportBytes = bytes
+                    // Langsung buka dialog password agar user bisa konfirmasi/ubah password cadangan
+                    showImportPasswordDialog = true
                 }
             } catch (e: Exception) {
-                Toast.makeText(context, "Gagal impor berkas: ${e.message}", Toast.LENGTH_LONG).show()
+                Toast.makeText(context, "Gagal membaca berkas: ${e.message}", Toast.LENGTH_LONG).show()
             }
         }
     }
@@ -194,26 +195,48 @@ fun MainVaultScreen(
                 .fillMaxSize()
                 .padding(padding)
         ) {
-            // GLOBAL SEARCH BAR
+            // GLOBAL SEARCH BAR (Ramping & Proporsional)
             OutlinedTextField(
                 value = searchQuery,
                 onValueChange = { searchQuery = it },
-                leadingIcon = { Icon(Icons.Default.Search, contentDescription = "Search", tint = TextSecondary) },
+                leadingIcon = { 
+                    Icon(
+                        Icons.Default.Search, 
+                        contentDescription = "Search", 
+                        tint = TextSecondary,
+                        modifier = Modifier.size(18.dp)
+                    ) 
+                },
                 trailingIcon = {
                     if (searchQuery.isNotEmpty()) {
-                        IconButton(onClick = { searchQuery = "" }) {
-                            Icon(Icons.Default.Clear, contentDescription = "Clear", tint = TextSecondary)
+                        IconButton(
+                            onClick = { searchQuery = "" },
+                            modifier = Modifier.size(28.dp)
+                        ) {
+                            Icon(
+                                Icons.Default.Clear, 
+                                contentDescription = "Clear", 
+                                tint = TextSecondary,
+                                modifier = Modifier.size(16.dp)
+                            )
                         }
                     }
                 },
+                placeholder = {
+                    Text("Cari...", color = TextSecondary.copy(alpha = 0.5f), fontSize = 13.sp)
+                },
                 singleLine = true,
+                textStyle = LocalTextStyle.current.copy(fontSize = 13.sp),
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 8.dp),
-                shape = RoundedCornerShape(12.dp),
+                    .padding(horizontal = 16.dp, vertical = 4.dp)
+                    .height(44.dp),
+                shape = RoundedCornerShape(10.dp),
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedContainerColor = SurfaceDark,
-                    unfocusedContainerColor = SurfaceDark
+                    unfocusedContainerColor = SurfaceDark,
+                    focusedBorderColor = AccentCyan.copy(alpha = 0.5f),
+                    unfocusedBorderColor = Color.Transparent
                 )
             )
 
@@ -619,6 +642,91 @@ fun MainVaultScreen(
         )
     }
 
+    // DIALOG INPUT PASSWORD SAAT IMPOR (.cirovault)
+    if (showImportPasswordDialog && pendingImportBytes != null) {
+        val currentPassStr = remember { repository.currentMasterPass?.let { String(it) } ?: "" }
+        var importPassInput by remember { mutableStateOf(currentPassStr) }
+        var isPasswordVisible by remember { mutableStateOf(false) }
+        var errorMessage by remember { mutableStateOf<String?>(null) }
+
+        AlertDialog(
+            onDismissRequest = {
+                showImportPasswordDialog = false
+                pendingImportBytes = null
+            },
+            title = { Text("Buka Kunci Berkas Cadangan") },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(
+                        "Masukkan Master Password yang digunakan saat mengenkripsi berkas .cirovault ini.",
+                        fontSize = 13.sp,
+                        color = TextSecondary
+                    )
+                    OutlinedTextField(
+                        value = importPassInput,
+                        onValueChange = { 
+                            importPassInput = it
+                            errorMessage = null
+                        },
+                        label = { Text("Password Berkas Cadangan") },
+                        singleLine = true,
+                        isError = errorMessage != null,
+                        visualTransformation = if (isPasswordVisible) VisualTransformation.None else PasswordVisualTransformation(),
+                        trailingIcon = {
+                            IconButton(onClick = { isPasswordVisible = !isPasswordVisible }) {
+                                Icon(
+                                    imageVector = if (isPasswordVisible) Icons.Default.VisibilityOff else Icons.Default.Visibility,
+                                    contentDescription = "Toggle Password"
+                                )
+                            }
+                        },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    if (errorMessage != null) {
+                        Text(
+                            text = errorMessage!!,
+                            color = MaterialTheme.colorScheme.error,
+                            fontSize = 12.sp
+                        )
+                    }
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        val bytes = pendingImportBytes
+                        if (bytes != null && importPassInput.isNotEmpty()) {
+                            val ok = repository.importEncryptedBytes(bytes, importPassInput.toCharArray())
+                            if (ok) {
+                                refreshKey++
+                                showImportPasswordDialog = false
+                                pendingImportBytes = null
+                                Toast.makeText(context, "Berhasil memulihkan data dari berkas cadangan!", Toast.LENGTH_LONG).show()
+                            } else {
+                                errorMessage = "Password salah atau berkas rusak!"
+                            }
+                        } else {
+                            errorMessage = "Password tidak boleh kosong"
+                        }
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = AccentCyan, contentColor = Color.Black)
+                ) {
+                    Text("Buka & Pulihkan", fontWeight = FontWeight.Bold)
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = {
+                        showImportPasswordDialog = false
+                        pendingImportBytes = null
+                    }
+                ) {
+                    Text("Batal")
+                }
+            }
+        )
+    }
+
     // NOTE EDITOR SHEET / DIALOG
     if (isCreatingNote || editingNote != null) {
         val target = editingNote ?: NoteItem(title = "", content = "", folderId = selectedFolderId ?: "")
@@ -672,7 +780,7 @@ fun MainVaultScreen(
 }
 
 // -------------------------------------------------------------
-// KEEPASSDX STYLE FOLDER ROW COMPONENT
+// KEEPASSDX STYLE FOLDER ROW COMPONENT (RAMPING & PROPORSIONAL)
 // -------------------------------------------------------------
 @Composable
 fun KeePassFolderRow(
@@ -687,54 +795,54 @@ fun KeePassFolderRow(
             .fillMaxWidth()
             .clickable { onClick() },
         colors = CardDefaults.cardColors(containerColor = SurfaceDark),
-        shape = RoundedCornerShape(12.dp)
+        shape = RoundedCornerShape(10.dp)
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 14.dp),
+                .padding(horizontal = 12.dp, vertical = 7.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Icon folder dengan Badge Oranye persis KeePassDX
+            // Icon folder dengan Badge Oranye mungil
             Box(
                 contentAlignment = Alignment.TopStart,
-                modifier = Modifier.size(38.dp)
+                modifier = Modifier.size(28.dp)
             ) {
                 Icon(
                     imageVector = Icons.Default.Folder,
                     contentDescription = null,
                     tint = TextPrimary.copy(alpha = 0.85f),
                     modifier = Modifier
-                        .size(32.dp)
+                        .size(22.dp)
                         .align(Alignment.BottomEnd)
                 )
                 // Badge oranye lonjong/bulat dengan angka item
                 Surface(
                     color = AccentOrange,
-                    shape = RoundedCornerShape(10.dp),
-                    modifier = Modifier.height(18.dp).defaultMinSize(minWidth = 18.dp)
+                    shape = RoundedCornerShape(8.dp),
+                    modifier = Modifier.height(13.dp).defaultMinSize(minWidth = 13.dp)
                 ) {
                     Box(
                         contentAlignment = Alignment.Center,
-                        modifier = Modifier.padding(horizontal = 4.dp)
+                        modifier = Modifier.padding(horizontal = 3.dp)
                     ) {
                         Text(
                             text = itemCount.toString(),
                             color = Color.White,
-                            fontSize = 10.sp,
+                            fontSize = 8.sp,
                             fontWeight = FontWeight.Bold
                         )
                     }
                 }
             }
 
-            Spacer(modifier = Modifier.width(16.dp))
+            Spacer(modifier = Modifier.width(10.dp))
 
             // Nama Folder
             Text(
                 text = folder.name,
-                fontWeight = FontWeight.SemiBold,
-                fontSize = 16.sp,
+                fontWeight = FontWeight.Medium,
+                fontSize = 13.5.sp,
                 color = TextPrimary,
                 modifier = Modifier.weight(1f),
                 maxLines = 1,
@@ -744,26 +852,26 @@ fun KeePassFolderRow(
             // Edit nama folder
             IconButton(
                 onClick = onEdit,
-                modifier = Modifier.size(32.dp)
+                modifier = Modifier.size(26.dp)
             ) {
                 Icon(
                     imageVector = Icons.Default.Edit,
                     contentDescription = "Edit Nama Folder",
                     tint = TextSecondary,
-                    modifier = Modifier.size(17.dp)
+                    modifier = Modifier.size(15.dp)
                 )
             }
 
             // Hapus folder
             IconButton(
                 onClick = onDelete,
-                modifier = Modifier.size(32.dp)
+                modifier = Modifier.size(26.dp)
             ) {
                 Icon(
                     imageVector = Icons.Default.DeleteOutline,
                     contentDescription = "Hapus Folder",
                     tint = TextSecondary,
-                    modifier = Modifier.size(18.dp)
+                    modifier = Modifier.size(15.dp)
                 )
             }
 
@@ -772,7 +880,7 @@ fun KeePassFolderRow(
                 imageVector = Icons.Default.ChevronRight,
                 contentDescription = "Buka",
                 tint = TextSecondary,
-                modifier = Modifier.size(20.dp)
+                modifier = Modifier.size(16.dp)
             )
         }
     }
