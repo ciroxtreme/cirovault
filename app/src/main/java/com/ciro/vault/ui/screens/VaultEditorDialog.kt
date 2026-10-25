@@ -1,5 +1,6 @@
 package com.ciro.vault.ui.screens
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -19,6 +20,7 @@ import com.ciro.vault.model.FolderItem
 import com.ciro.vault.model.VaultItem
 import com.ciro.vault.ui.components.IconRegistry
 import com.ciro.vault.ui.theme.AccentCyan
+import com.ciro.vault.ui.theme.BgDark
 import com.ciro.vault.ui.theme.SurfaceDark
 import com.ciro.vault.ui.theme.TextPrimary
 import com.ciro.vault.ui.theme.TextSecondary
