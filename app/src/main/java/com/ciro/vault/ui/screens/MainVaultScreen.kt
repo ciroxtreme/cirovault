@@ -198,7 +198,6 @@ fun MainVaultScreen(
             OutlinedTextField(
                 value = searchQuery,
                 onValueChange = { searchQuery = it },
-                placeholder = { Text("Cari catatan, akun, URL, atau API key...") },
                 leadingIcon = { Icon(Icons.Default.Search, contentDescription = "Search", tint = TextSecondary) },
                 trailingIcon = {
                     if (searchQuery.isNotEmpty()) {
