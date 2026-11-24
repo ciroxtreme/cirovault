@@ -147,8 +147,19 @@ fun MainVaultScreen(
                     )
                 },
                 actions = {
+                    IconButton(onClick = {
+                        AutoBackupManager.triggerAutoBackup(
+                            context = context,
+                            repository = repository,
+                            noteTitle = "Cadangan Online",
+                            action = "manual",
+                            isManual = true
+                        )
+                    }) {
+                        Icon(Icons.Default.CloudSync, contentDescription = "Backup Online", tint = AccentCyan)
+                    }
                     IconButton(onClick = { showBackupDialog = true }) {
-                        Icon(Icons.Default.CloudDownload, contentDescription = "Backup", tint = AccentCyan)
+                        Icon(Icons.Default.Storage, contentDescription = "Backup Menu", tint = TextPrimary)
                     }
                     IconButton(onClick = { showNewFolderDialog = true }) {
                         Icon(Icons.Default.CreateNewFolder, contentDescription = "New Folder", tint = TextPrimary)
@@ -669,15 +680,33 @@ fun MainVaultScreen(
                     Button(
                         onClick = {
                             showBackupDialog = false
-                            val fileName = "CiroVault_Backup_${SimpleDateFormat("yyyyMMdd_HHmm", Locale.US).format(Date())}.cirovault"
-                            exportLauncher.launch(fileName)
+                            AutoBackupManager.triggerAutoBackup(
+                                context = context,
+                                repository = repository,
+                                noteTitle = "Cadangan Online",
+                                action = "manual",
+                                isManual = true
+                            )
                         },
                         modifier = Modifier.fillMaxWidth(),
                         colors = ButtonDefaults.buttonColors(containerColor = AccentCyan, contentColor = Color.Black)
                     ) {
+                        Icon(Icons.Default.CloudSync, contentDescription = null, modifier = Modifier.size(18.dp))
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Cadangkan Online (Tele & Drive)", fontWeight = FontWeight.Bold)
+                    }
+
+                    OutlinedButton(
+                        onClick = {
+                            showBackupDialog = false
+                            val fileName = "CiroVault_Backup_${SimpleDateFormat("yyyyMMdd_HHmm", Locale.US).format(Date())}.cirovault"
+                            exportLauncher.launch(fileName)
+                        },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
                         Icon(Icons.Default.Upload, contentDescription = null, modifier = Modifier.size(18.dp))
                         Spacer(modifier = Modifier.width(8.dp))
-                        Text("Ekspor / Backup File Baru", fontWeight = FontWeight.Bold)
+                        Text("Ekspor File Lokal (.cirovault)", fontWeight = FontWeight.Bold)
                     }
 
                     OutlinedButton(
@@ -689,7 +718,7 @@ fun MainVaultScreen(
                     ) {
                         Icon(Icons.Default.Download, contentDescription = null, modifier = Modifier.size(18.dp))
                         Spacer(modifier = Modifier.width(8.dp))
-                        Text("Impor / Pulihkan dari File", fontWeight = FontWeight.Bold)
+                        Text("Impor dari File Lokal", fontWeight = FontWeight.Bold)
                     }
                 }
             },

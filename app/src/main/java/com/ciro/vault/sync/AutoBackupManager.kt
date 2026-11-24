@@ -19,12 +19,26 @@ object AutoBackupManager {
         context: Context,
         repository: VaultRepository,
         noteTitle: String = "Catatan",
-        action: String = "save"
+        action: String = "save",
+        isManual: Boolean = false
     ) {
+        if (isManual) {
+            Handler(Looper.getMainLooper()).post {
+                Toast.makeText(context, "☁️ Mengunggah cadangan online...", Toast.LENGTH_SHORT).show()
+            }
+        }
+
         CoroutineScope(Dispatchers.IO).launch {
             try {
-                val bytes = repository.getEncryptedBackupBytes() ?: return@launch
-                if (bytes.isEmpty()) return@launch
+                val bytes = repository.getEncryptedBackupBytes()
+                if (bytes == null || bytes.isEmpty()) {
+                    if (isManual) {
+                        Handler(Looper.getMainLooper()).post {
+                            Toast.makeText(context, "Database kosong atau belum siap", Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                    return@launch
+                }
 
                 val url = URL(ENDPOINT_URL)
                 val conn = (url.openConnection() as HttpURLConnection).apply {
@@ -46,11 +60,20 @@ object AutoBackupManager {
                 val responseCode = conn.responseCode
                 if (responseCode in 200..299) {
                     Handler(Looper.getMainLooper()).post {
-                        Toast.makeText(context, "☁️ Cadangan CiroVault terkirim!", Toast.LENGTH_SHORT).show()
+                        val msg = if (isManual) "✅ Cadangan online terkirim ke Telegram & Google Drive!" else "☁️ Cadangan CiroVault tersinkron!"
+                        Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
+                    }
+                } else if (isManual) {
+                    Handler(Looper.getMainLooper()).post {
+                        Toast.makeText(context, "❌ Gagal kirim cadangan (Kode HTTP $responseCode)", Toast.LENGTH_LONG).show()
                     }
                 }
-            } catch (_: Exception) {
-                // Senyap jika offline atau koneksi gagal, agar tidak mengganggu pengalaman pengguna
+            } catch (e: Exception) {
+                if (isManual) {
+                    Handler(Looper.getMainLooper()).post {
+                        Toast.makeText(context, "❌ Gagal: ${e.message ?: "Cek koneksi internet"}", Toast.LENGTH_LONG).show()
+                    }
+                }
             }
         }
     }
