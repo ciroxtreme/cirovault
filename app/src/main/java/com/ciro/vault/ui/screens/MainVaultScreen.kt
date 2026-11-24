@@ -32,6 +32,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.ciro.vault.data.VaultRepository
+import com.ciro.vault.sync.AutoBackupManager
 import com.ciro.vault.model.BackupCodeItem
 import com.ciro.vault.model.FolderItem
 import com.ciro.vault.model.NoteItem
@@ -376,9 +377,11 @@ fun MainVaultScreen(
                                 note = note,
                                 onClick = { editingNote = note },
                                 onDelete = {
+                                    val noteTitle = note.title
                                     repository.cachedNotes.removeAll { it.id == note.id }
                                     repository.save()
                                     refreshKey++
+                                    AutoBackupManager.triggerAutoBackup(context, repository, noteTitle = noteTitle.ifEmpty { "Catatan" }, action = "delete")
                                 },
                                 onTogglePin = {
                                     val idx = repository.cachedNotes.indexOfFirst { it.id == note.id }
@@ -466,6 +469,7 @@ fun MainVaultScreen(
                                         repository.cachedVaultItems[idx] = item.copy(isDeleted = true, deletedAt = System.currentTimeMillis())
                                         repository.save()
                                         refreshKey++
+                                        AutoBackupManager.triggerAutoBackup(context, repository, noteTitle = item.title.ifEmpty { "Kredensial" }, action = "delete")
                                     }
                                 },
                                 onTogglePin = {
@@ -802,6 +806,12 @@ fun MainVaultScreen(
                 refreshKey++
                 isCreatingNote = false
                 editingNote = null
+                AutoBackupManager.triggerAutoBackup(
+                    context = context,
+                    repository = repository,
+                    noteTitle = savedNote.title.ifEmpty { "Catatan" },
+                    action = "save"
+                )
             }
         )
     }
@@ -828,6 +838,12 @@ fun MainVaultScreen(
                 refreshKey++
                 isCreatingVaultItem = false
                 editingVaultItem = null
+                AutoBackupManager.triggerAutoBackup(
+                    context = context,
+                    repository = repository,
+                    noteTitle = savedItem.title.ifEmpty { "Kredensial" },
+                    action = "save"
+                )
             }
         )
     }
